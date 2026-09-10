@@ -15,15 +15,25 @@ dependencies.
 
 ## Building
 
-Requires JDK 21 and Gradle 8.x.
+Two ways, pick whichever fits your machine.
+
+**Docker, nothing installed locally.** This needs no JDK and no Gradle on the
+host, only Docker:
 
 ```bash
-gradle build
+docker run --rm --user "$(id -u):$(id -g)" -e GRADLE_USER_HOME=/app/.gradletmp \
+  -v "$PWD":/app -w /app gradle:8.14.3-jdk21 gradle build
 ```
 
-The jar lands in `build/libs/Arcana-0.1.0.jar`. If you would rather use the
-wrapper so nobody else needs Gradle installed, generate it once with
-`gradle wrapper` and commit it.
+The Gradle cache lands in `.gradletmp/`, which is gitignored.
+
+**Wrapper, if you already have JDK 21:**
+
+```bash
+./gradlew build
+```
+
+Either way the jar lands in `build/libs/Arcana-0.1.0.jar`.
 
 ## Installing
 
