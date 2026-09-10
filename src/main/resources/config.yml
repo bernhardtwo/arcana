@@ -85,6 +85,12 @@ abilities:
     marker-interval: 10
     marker-height: 12.0
     marker-rings: 5
+    marker-points-per-ring: 32
+    marker-particle-size: 1.6
+    marker-color-a: "FFFFFF"
+    marker-color-b: "FF6A00"
+    marker-force-render: true
+    marker-pillars: 8
     cooldown-ticks: 18000
 
   solar_bloom:

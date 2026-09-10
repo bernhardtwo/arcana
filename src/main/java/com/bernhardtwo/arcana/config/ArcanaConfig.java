@@ -1,5 +1,6 @@
 package com.bernhardtwo.arcana.config;
 
+import org.bukkit.Color;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 
@@ -22,7 +23,8 @@ public final class ArcanaConfig {
             new IceArmorSettings(3, 1.2, 1.0, 0.12, 15, 1200, false,
                     EnumSet.of(EntityType.WARDEN, EntityType.ENDER_DRAGON, EntityType.WITHER, EntityType.GHAST));
     private static final SolarLanternSettings LANTERN_DEFAULTS = new SolarLanternSettings(24000, 12000, 0.9);
-    private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 12.0, 5, 18000);
+    private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 12.0, 5, 32, 1.6f,
+            Color.fromRGB(0xFFFFFF), Color.fromRGB(0xFF6A00), true, 8, 18000);
     private static final SolarBloomSettings BLOOM_DEFAULTS = new SolarBloomSettings(5, 12);
 
     private final boolean effects;
@@ -65,7 +67,7 @@ public final class ArcanaConfig {
                 IceBreakerSettings.from(config.getConfigurationSection("abilities.ice_breaker"), BREAKER_DEFAULTS),
                 IceArmorSettings.from(config.getConfigurationSection("abilities.ice_armor"), ARMOR_DEFAULTS, logger),
                 SolarLanternSettings.from(config.getConfigurationSection("abilities.solar_lantern"), LANTERN_DEFAULTS),
-                SolarZenithSettings.from(config.getConfigurationSection("abilities.solar_zenith"), ZENITH_DEFAULTS),
+                SolarZenithSettings.from(config.getConfigurationSection("abilities.solar_zenith"), ZENITH_DEFAULTS, logger),
                 SolarBloomSettings.from(config.getConfigurationSection("abilities.solar_bloom"), BLOOM_DEFAULTS)
         );
     }
