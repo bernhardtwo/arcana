@@ -33,3 +33,9 @@ abilities:
       players: false
       mobs: true
     fall-grace-ticks: 120
+
+  gravity_leap:
+    jump-power: 0.9
+    forward-boost: 0.35
+    cooldown-ticks: 20
+    fall-grace-ticks: 100

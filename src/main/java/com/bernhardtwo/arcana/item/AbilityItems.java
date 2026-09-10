@@ -1,6 +1,7 @@
 package com.bernhardtwo.arcana.item;
 
 import com.bernhardtwo.arcana.ArcanaPlugin;
+import com.bernhardtwo.arcana.ability.Ability;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -8,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,15 +25,11 @@ public final class AbilityItems {
         meta.displayName(Component.text(wand.displayName(), NamedTextColor.LIGHT_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
 
-        String primary = plugin.abilities().find(wand.primaryAbility())
-                .map(ability -> ability.displayName()).orElse(wand.primaryAbility());
-        String secondary = plugin.abilities().find(wand.secondaryAbility())
-                .map(ability -> ability.displayName()).orElse(wand.secondaryAbility());
-
-        meta.lore(List.of(
-                line("Right click: " + primary),
-                line("Sneak + right click: " + secondary)
-        ));
+        List<Component> lore = new ArrayList<>();
+        addSlot(lore, plugin, "Right click: ", wand.rightClickAbility());
+        addSlot(lore, plugin, "Sneak + right click: ", wand.sneakRightClickAbility());
+        addSlot(lore, plugin, "Left click: ", wand.leftClickAbility());
+        meta.lore(lore);
         meta.setEnchantmentGlintOverride(true);
         meta.getPersistentDataContainer().set(plugin.wandKey(), PersistentDataType.STRING, wand.id());
 
@@ -49,6 +47,14 @@ public final class AbilityItems {
             return Optional.empty();
         }
         return plugin.wands().find(id);
+    }
+
+    private static void addSlot(List<Component> lore, ArcanaPlugin plugin, String label, String abilityId) {
+        if (abilityId == null) {
+            return;
+        }
+        String name = plugin.abilities().find(abilityId).map(Ability::displayName).orElse(abilityId);
+        lore.add(line(label + name));
     }
 
     private static Component line(String text) {

@@ -22,3 +22,6 @@ permissions:
   arcana.use.gravity_pull:
     description: "Allows casting Gravity: Pull."
     default: true
+  arcana.use.gravity_leap:
+    description: "Allows casting Gravity: Leap."
+    default: true

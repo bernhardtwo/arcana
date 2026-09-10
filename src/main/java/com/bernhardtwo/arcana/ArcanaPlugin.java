@@ -4,6 +4,7 @@ import com.bernhardtwo.arcana.ability.AbilityRegistry;
 import com.bernhardtwo.arcana.ability.CooldownTracker;
 import com.bernhardtwo.arcana.ability.FallGrace;
 import com.bernhardtwo.arcana.ability.gravity.GravityAbility;
+import com.bernhardtwo.arcana.ability.gravity.GravityLeapAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityMode;
 import com.bernhardtwo.arcana.command.ArcanaCommand;
 import com.bernhardtwo.arcana.config.ArcanaConfig;
@@ -39,9 +40,12 @@ public final class ArcanaPlugin extends JavaPlugin {
         abilities = new AbilityRegistry();
         abilities.register(new GravityAbility(this, GravityMode.PUSH));
         abilities.register(new GravityAbility(this, GravityMode.PULL));
+        GravityLeapAbility leap = new GravityLeapAbility(this);
+        abilities.register(leap);
 
         wands = new WandRegistry();
-        wands.register(new Wand("gravity", "Gravity Staff", Material.BLAZE_ROD, "gravity_push", "gravity_pull"));
+        wands.register(new Wand("gravity", "Gravity Staff", Material.BLAZE_ROD,
+                "gravity_push", "gravity_pull", "gravity_leap"));
 
         getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
         getServer().getPluginManager().registerEvents(new FallDamageListener(this), this);
@@ -54,6 +58,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         }
 
         getServer().getScheduler().runTaskTimer(this, fallGrace::purgeExpired, 1200L, 1200L);
+        getServer().getScheduler().runTaskTimer(this, leap::tick, 5L, 5L);
         getLogger().info("Arcana enabled with " + abilities.all().size() + " abilities.");
     }
 
