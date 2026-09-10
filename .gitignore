@@ -1,0 +1,10 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradletmp/
+.idea/
+*.iml
+.vscode/
+dev/data/
+dev/plugins/
+*.log

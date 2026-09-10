@@ -1,0 +1,24 @@
+name: Arcana
+version: '${version}'
+main: com.bernhardtwo.arcana.ArcanaPlugin
+api-version: '1.21'
+description: Item-bound magic abilities for Paper servers.
+author: Bernardo Vega
+website: https://github.com/bernhardtwo/arcana
+softdepend:
+  - GriefPrevention
+commands:
+  arcana:
+    description: Manages the ability staffs.
+    usage: /arcana give <player> <staff> | /arcana list | /arcana reload
+    permission: arcana.admin
+permissions:
+  arcana.admin:
+    description: Access to the Arcana admin commands.
+    default: op
+  arcana.use.gravity_push:
+    description: Allows casting Gravity: Push.
+    default: true
+  arcana.use.gravity_pull:
+    description: Allows casting Gravity: Pull.
+    default: true

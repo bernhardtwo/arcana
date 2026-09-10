@@ -1,0 +1,35 @@
+# Arcana
+# Strength values are in blocks per tick. For reference, a vanilla jump starts
+# with a vertical velocity of 0.42.
+
+effects: true
+
+targets:
+  players: true
+  hostiles: true
+  passives: true
+  armor-stands: false
+  respect-claims: true
+
+abilities:
+  gravity_push:
+    radius: 6.0
+    strength: 1.3
+    lift: 0.45
+    max-velocity: 2.2
+    cooldown-ticks: 100
+    cancel-fall-damage:
+      players: false
+      mobs: true
+    fall-grace-ticks: 120
+
+  gravity_pull:
+    radius: 14.0
+    strength: 1.1
+    lift: 0.25
+    max-velocity: 1.8
+    cooldown-ticks: 140
+    cancel-fall-damage:
+      players: false
+      mobs: true
+    fall-grace-ticks: 120
