@@ -83,19 +83,19 @@ public final class AbilityUseListener implements Listener {
     }
 
     private void castLeftClick(Player player, Wand wand, ItemStack held) {
-        String abilityId = wand.leftClickAbility();
-        if (abilityId == null) {
-            return;
-        }
         int tick = Bukkit.getCurrentTick();
         Integer previous = lastLeftClickTick.put(player.getUniqueId(), tick);
         if (previous != null && previous == tick) {
             return;
         }
-        tryCast(player, abilityId, held);
+        tryCast(player, wand.leftClickAbility(), held);
     }
 
     private void tryCast(Player player, String abilityId, ItemStack held) {
+        // An empty wand slot does nothing at all. The message below is only for a slot naming a missing ability.
+        if (abilityId == null) {
+            return;
+        }
         Optional<Ability> ability = plugin.abilities().find(abilityId);
         if (ability.isEmpty()) {
             player.sendMessage(warn("That ability no longer exists on this server."));
@@ -112,10 +112,9 @@ public final class AbilityUseListener implements Listener {
         }
 
         UUID id = player.getUniqueId();
-        Ability blocker = lockedBy(id, selected);
-        if (blocker != null) {
-            long left = plugin.cooldowns().remainingMillis(id, blocker.id());
-            player.sendActionBar(warn(blocker.displayName() + " blocks " + selected.displayName() + " for " + format(left)));
+        Component lockout = lockoutMessage(player, selected);
+        if (lockout != null) {
+            player.sendActionBar(lockout);
             return;
         }
 
@@ -131,15 +130,17 @@ public final class AbilityUseListener implements Listener {
         } finally {
             casting = false;
         }
-        plugin.cooldowns().start(id, selected.id(), selected.cooldownTicks());
-        // The vanilla indicator is per material, so a short cooldown must not overwrite a longer one still running.
-        if (held != null && player.getCooldown(held.getType()) < selected.cooldownTicks()) {
-            player.setCooldown(held.getType(), selected.cooldownTicks());
+        if (selected.startsCooldownOnCast()) {
+            plugin.cooldowns().start(id, selected.id(), selected.cooldownTicks());
+            // The vanilla indicator is per material, so a short cooldown must not overwrite a longer one still running.
+            if (held != null && player.getCooldown(held.getType()) < selected.cooldownTicks()) {
+                player.setCooldown(held.getType(), selected.cooldownTicks());
+            }
         }
         player.sendActionBar(Component.text(selected.displayName(), NamedTextColor.LIGHT_PURPLE));
     }
 
-    private Ability lockedBy(UUID player, Ability selected) {
+    private Component lockoutMessage(Player player, Ability selected) {
         String group = selected.lockoutGroup();
         if (group == null) {
             return null;
@@ -148,8 +149,12 @@ public final class AbilityUseListener implements Listener {
             if (other == selected || !group.equals(other.lockoutGroup())) {
                 continue;
             }
-            if (plugin.cooldowns().remainingMillis(player, other.id()) > 0L) {
-                return other;
+            if (other.blocksGroupWhileActive(player)) {
+                return warn(other.displayName() + " blocks " + selected.displayName() + " while active");
+            }
+            long left = plugin.cooldowns().remainingMillis(player.getUniqueId(), other.id());
+            if (left > 0L) {
+                return warn(other.displayName() + " blocks " + selected.displayName() + " for " + format(left));
             }
         }
         return null;

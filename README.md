@@ -19,8 +19,7 @@ Two staffs so far.
 |---|---|---|
 | Ice: Slash | Left click | Frost arc in front of the caster, plus a snowball that also freezes |
 | Ice: Breaker | Right click | Spiral ice beam to whatever you are aiming at, up to 24 blocks |
-
-Sneak + right click on the ice staff is reserved for Ice Armor, coming later.
+| Ice: Armor | Sneak + right click | Orbiting ice crystals that each absorb one attack |
 
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
@@ -77,6 +76,7 @@ Registered staffs: `gravity` and `ice`.
 | `arcana.use.gravity_leap` | true | Cast Leap |
 | `arcana.use.ice_slash` | true | Cast Slash |
 | `arcana.use.ice_breaker` | true | Cast Breaker |
+| `arcana.use.ice_armor` | true | Cast Armor |
 
 The `arcana.use.*` nodes are checked on every cast, so they can be handed out
 per rank from LuckPerms without touching the plugin.
@@ -128,6 +128,28 @@ only applied when the damage actually went through.
   is resolved before the spiral is drawn, so it never feels like a shot did not
   register. On an entity it deals `damage` plus freeze and slow; on a block it
   is only a particle burst. The spiral is capped at 160 particles per cast.
+- **Armor** summons `charges` crystals orbiting the caster. Only attacks
+  consume a charge: damage from a living entity, or from a projectile shot by
+  one. Fall damage, drowning, fire, starvation and every other environmental
+  cause pass straight through. A normal attacker shatters one crystal and the
+  hit is fully cancelled. A strong attacker, from the `strong-attackers` list
+  or a projectile shot by one, shatters every remaining crystal at once and
+  that hit is still fully cancelled: you survive the boss hit once, then you
+  are exposed. Players count as normal attackers; that is a deliberate first
+  pass and easy to revisit if PvP asks for it. A hit another plugin already
+  cancelled never wastes a charge.
+
+  The armor ends when the last charge goes or after `idle-seconds` without an
+  absorbed hit. Its cooldown starts only when the armor ends, never at cast
+  time. Because the `ice` lockout only blocks while something is on cooldown,
+  Slash and Breaker stay usable while the crystals are up. If you want the
+  armor to be a stance instead, set `block-abilities-while-active: true`.
+
+  The crystals are block display entities marked non-persistent, so they are
+  never written to disk and a crash cannot leave orphans. They are removed on
+  the last charge, on idle timeout, on quit, on death, on world change and on
+  plugin disable, and the plugin sweeps loaded worlds for stray crystals on
+  startup as insurance.
 
 ## Configuration
 
@@ -177,6 +199,20 @@ abilities:
     freeze-ticks: 100
     slow-duration-ticks: 60
     cooldown-ticks: 120
+
+  ice_armor:
+    charges: 3
+    orbit-radius: 1.2
+    orbit-height: 1.0
+    orbit-speed: 0.12
+    idle-seconds: 15
+    cooldown-ticks: 1200
+    block-abilities-while-active: false
+    strong-attackers:
+      - WARDEN
+      - ENDER_DRAGON
+      - WITHER
+      - GHAST
 ```
 
 Notes on decisions that are not obvious:
@@ -197,6 +233,8 @@ Notes on decisions that are not obvious:
 - `freeze-ticks` below 140 never deals freezing damage on its own; it is the
   shiver and the frost overlay. Damage is only `slash-damage`,
   `snowball-damage` and `damage`.
+- `strong-attackers` takes Bukkit `EntityType` names. Unknown names are logged
+  and skipped. `orbit-speed` is radians per tick.
 
 ## GriefPrevention
 
@@ -220,6 +258,10 @@ console, and the abilities keep working without claim protection.
   staff's melee hit before the left click ability fires.
 - Leap decides whether you are airborne from the on-ground flag the client
   reports, the same one vanilla uses for fall distance.
+- Cooldowns live in memory and are dropped on quit, so relogging clears them.
+  That includes the Ice Armor cooldown started when the armor ends on quit.
+- Dragon breath is an area effect cloud, not a living entity or a projectile,
+  so it passes through Ice Armor like environmental damage.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.
   Without an anticheat there is no problem. The day Grim comes in, those ticks
   will need an exemption.
@@ -235,6 +277,10 @@ The structure is already laid out for more than one ability:
 - `Ability#lockoutGroup` lets a set of abilities share a lockout: while one is
   on cooldown, none of the others in the group can be cast. The ice abilities
   use it, the gravity ones do not.
+- An ability with a duration returns false from `startsCooldownOnCast` and
+  starts its own cooldown when it ends. `blocksGroupWhileActive` lets it hold
+  the group meanwhile. Ice Armor is the reference implementation, including
+  the cleanup on every exit path a stateful ability needs.
 - Items are identified by `PersistentDataContainer`, never by name or lore, so
   renaming a stick in an anvil forges nothing.
 

@@ -56,3 +56,17 @@ abilities:
     freeze-ticks: 100
     slow-duration-ticks: 60
     cooldown-ticks: 120
+
+  ice_armor:
+    charges: 3
+    orbit-radius: 1.2
+    orbit-height: 1.0
+    orbit-speed: 0.12
+    idle-seconds: 15
+    cooldown-ticks: 1200
+    block-abilities-while-active: false
+    strong-attackers:
+      - WARDEN
+      - ENDER_DRAGON
+      - WITHER
+      - GHAST

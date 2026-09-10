@@ -31,4 +31,17 @@ public interface Ability {
     default boolean canCast(Player caster) {
         return true;
     }
+
+    /**
+     * False for abilities with a duration, which start their own cooldown when
+     * they end instead of when they are cast.
+     */
+    default boolean startsCooldownOnCast() {
+        return true;
+    }
+
+    /** True while this ability is running for the player and wants the rest of its group blocked meanwhile. */
+    default boolean blocksGroupWhileActive(Player player) {
+        return false;
+    }
 }

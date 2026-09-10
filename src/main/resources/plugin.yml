@@ -31,3 +31,6 @@ permissions:
   arcana.use.ice_breaker:
     description: "Allows casting Ice: Breaker."
     default: true
+  arcana.use.ice_armor:
+    description: "Allows casting Ice: Armor."
+    default: true

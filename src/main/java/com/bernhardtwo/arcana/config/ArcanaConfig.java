@@ -1,6 +1,10 @@
 package com.bernhardtwo.arcana.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
+
+import java.util.EnumSet;
+import java.util.logging.Logger;
 
 public final class ArcanaConfig {
 
@@ -14,6 +18,9 @@ public final class ArcanaConfig {
             new IceSlashSettings(3.5, 70.0, 4.0, 3.0, 1.8, 60, 40, 30);
     private static final IceBreakerSettings BREAKER_DEFAULTS =
             new IceBreakerSettings(24.0, 7.0, 100, 60, 120);
+    private static final IceArmorSettings ARMOR_DEFAULTS =
+            new IceArmorSettings(3, 1.2, 1.0, 0.12, 15, 1200, false,
+                    EnumSet.of(EntityType.WARDEN, EntityType.ENDER_DRAGON, EntityType.WITHER, EntityType.GHAST));
 
     private final boolean effects;
     private final TargetRules targets;
@@ -22,9 +29,11 @@ public final class ArcanaConfig {
     private final LeapSettings leap;
     private final IceSlashSettings iceSlash;
     private final IceBreakerSettings iceBreaker;
+    private final IceArmorSettings iceArmor;
 
     private ArcanaConfig(boolean effects, TargetRules targets, GravitySettings push, GravitySettings pull,
-                         LeapSettings leap, IceSlashSettings iceSlash, IceBreakerSettings iceBreaker) {
+                         LeapSettings leap, IceSlashSettings iceSlash, IceBreakerSettings iceBreaker,
+                         IceArmorSettings iceArmor) {
         this.effects = effects;
         this.targets = targets;
         this.push = push;
@@ -32,9 +41,10 @@ public final class ArcanaConfig {
         this.leap = leap;
         this.iceSlash = iceSlash;
         this.iceBreaker = iceBreaker;
+        this.iceArmor = iceArmor;
     }
 
-    public static ArcanaConfig load(FileConfiguration config) {
+    public static ArcanaConfig load(FileConfiguration config, Logger logger) {
         return new ArcanaConfig(
                 config.getBoolean("effects", true),
                 TargetRules.from(config.getConfigurationSection("targets")),
@@ -42,7 +52,8 @@ public final class ArcanaConfig {
                 GravitySettings.from(config.getConfigurationSection("abilities.gravity_pull"), PULL_DEFAULTS),
                 LeapSettings.from(config.getConfigurationSection("abilities.gravity_leap"), LEAP_DEFAULTS),
                 IceSlashSettings.from(config.getConfigurationSection("abilities.ice_slash"), SLASH_DEFAULTS),
-                IceBreakerSettings.from(config.getConfigurationSection("abilities.ice_breaker"), BREAKER_DEFAULTS)
+                IceBreakerSettings.from(config.getConfigurationSection("abilities.ice_breaker"), BREAKER_DEFAULTS),
+                IceArmorSettings.from(config.getConfigurationSection("abilities.ice_armor"), ARMOR_DEFAULTS, logger)
         );
     }
 
@@ -72,5 +83,9 @@ public final class ArcanaConfig {
 
     public IceBreakerSettings iceBreaker() {
         return iceBreaker;
+    }
+
+    public IceArmorSettings iceArmor() {
+        return iceArmor;
     }
 }
