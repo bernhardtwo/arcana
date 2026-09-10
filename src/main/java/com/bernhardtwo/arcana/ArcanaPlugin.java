@@ -3,6 +3,9 @@ package com.bernhardtwo.arcana;
 import com.bernhardtwo.arcana.ability.AbilityRegistry;
 import com.bernhardtwo.arcana.ability.FallGrace;
 import com.bernhardtwo.arcana.ability.PlayerStore;
+import com.bernhardtwo.arcana.ability.chain.ChainHookAbility;
+import com.bernhardtwo.arcana.ability.chain.ChainReelAbility;
+import com.bernhardtwo.arcana.ability.chain.ChainRendAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityLeapAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityMode;
@@ -19,9 +22,11 @@ import com.bernhardtwo.arcana.ability.solar.SolarZenithAbility;
 import com.bernhardtwo.arcana.command.ArcanaCommand;
 import com.bernhardtwo.arcana.config.ArcanaConfig;
 import com.bernhardtwo.arcana.integration.ClaimGuard;
+import com.bernhardtwo.arcana.integration.CoreProtectLog;
 import com.bernhardtwo.arcana.item.Wand;
 import com.bernhardtwo.arcana.item.WandRegistry;
 import com.bernhardtwo.arcana.listener.AbilityUseListener;
+import com.bernhardtwo.arcana.listener.ChainListener;
 import com.bernhardtwo.arcana.listener.FallDamageListener;
 import com.bernhardtwo.arcana.listener.IceArmorListener;
 import com.bernhardtwo.arcana.listener.IceListener;
@@ -46,12 +51,14 @@ public final class ArcanaPlugin extends JavaPlugin {
     private PlayerStore store;
     private FallGrace fallGrace;
     private ClaimGuard claims;
+    private CoreProtectLog coreProtect;
     private Frost frost;
     private IceArmorAbility iceArmor;
     private SolarLanternAbility solarLantern;
     private SolarZenithAbility solarZenith;
     private ShadowBodyAbility shadowBody;
     private ShadowSwapAbility shadowSwap;
+    private ChainHookAbility chainHook;
 
     @Override
     public void onEnable() {
@@ -64,6 +71,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         store = new PlayerStore(this);
         fallGrace = new FallGrace();
         claims = new ClaimGuard(this);
+        coreProtect = new CoreProtectLog(this);
         frost = new Frost();
 
         abilities = new AbilityRegistry();
@@ -85,6 +93,10 @@ public final class ArcanaPlugin extends JavaPlugin {
         abilities.register(shadowSwap);
         shadowBody = new ShadowBodyAbility(this);
         abilities.register(shadowBody);
+        chainHook = new ChainHookAbility(this);
+        abilities.register(chainHook);
+        abilities.register(new ChainReelAbility(this, chainHook));
+        abilities.register(new ChainRendAbility(this, chainHook));
         solarZenith.removeOrphanLights();
 
         wands = new WandRegistry();
@@ -96,6 +108,8 @@ public final class ArcanaPlugin extends JavaPlugin {
                 "solar_lantern", "solar_zenith", "solar_bloom"));
         wands.register(new Wand("shadow", "Shadow Staff", Material.ECHO_SHARD,
                 "shadow_blink", "shadow_body", "shadow_swap"));
+        wands.register(new Wand("chain", "Chain Staff", Material.IRON_CHAIN,
+                "chain_reel", "chain_rend", "chain_hook"));
 
         getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
         getServer().getPluginManager().registerEvents(new FallDamageListener(this), this);
@@ -103,6 +117,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new IceArmorListener(iceArmor), this);
         getServer().getPluginManager().registerEvents(new SolarListener(solarLantern, solarZenith), this);
         getServer().getPluginManager().registerEvents(new ShadowListener(this, shadowBody, shadowSwap), this);
+        getServer().getPluginManager().registerEvents(new ChainListener(chainHook), this);
 
         PluginCommand command = getCommand("arcana");
         if (command != null) {
@@ -116,6 +131,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, iceArmor::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, solarLantern::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, solarZenith::tick, 1L, 1L);
+        getServer().getScheduler().runTaskTimer(this, chainHook::tick, 1L, 1L);
         getLogger().info("Arcana enabled with " + abilities.all().size() + " abilities.");
     }
 
@@ -135,6 +151,9 @@ public final class ArcanaPlugin extends JavaPlugin {
         }
         if (shadowSwap != null) {
             shadowSwap.cancelAll();
+        }
+        if (chainHook != null) {
+            chainHook.endAll();
         }
     }
 
@@ -197,5 +216,9 @@ public final class ArcanaPlugin extends JavaPlugin {
 
     public ClaimGuard claims() {
         return claims;
+    }
+
+    public CoreProtectLog coreProtect() {
+        return coreProtect;
     }
 }

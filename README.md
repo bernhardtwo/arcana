@@ -3,7 +3,7 @@
 Item-bound magic abilities for Paper servers. A staff in hand, right click,
 and something happens around you.
 
-Four staffs so far.
+Five staffs so far.
 
 **Gravity Staff** (blaze rod)
 
@@ -36,6 +36,14 @@ Four staffs so far.
 | Shadow: Blink | Right click | Short teleport toward where you are looking, never into a block |
 | Shadow: Swap | Left click | Channel for three seconds, then trade places with whatever you aimed at |
 | Shadow: Body | Sneak + right click | Brief invisibility with the armor actually hidden |
+
+**Chain Staff** (iron chain)
+
+| Ability | How to cast | What it does |
+|---|---|---|
+| Chain: Hook | Left click | Fires a claw that latches onto the first block or creature it reaches |
+| Chain: Reel | Right click | Pulls along the chain: you toward a block, a creature toward you |
+| Chain: Rend | Sneak + right click | The claw spins at the anchor: damage on a creature, a break on a block |
 
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
@@ -76,7 +84,7 @@ All under the `arcana.admin` permission (op only by default).
 
 ```
 /arcana give <player> <staff>   hands out a staff
-/arcana list                    registered staffs and GriefPrevention status
+/arcana list                    registered staffs, GriefPrevention and CoreProtect status
 /arcana reload                  re-reads config.yml without a restart
 /arcana reset [player]          clears every cooldown and refills every charge pool
 /arcana reset [player] <id>     clears only that ability, for example solar_zenith
@@ -88,7 +96,7 @@ removed, `Cleared 4 cooldowns and refilled 1 charge pool for vegabernh`, and
 never errors on a player who has none. It exists for balancing: without it
 the only way to skip a 15 minute cooldown is deleting the playerdata file.
 
-Registered staffs: `gravity`, `ice`, `solar` and `shadow`.
+Registered staffs: `gravity`, `ice`, `solar`, `shadow` and `chain`.
 
 ## Permissions
 
@@ -107,6 +115,9 @@ Registered staffs: `gravity`, `ice`, `solar` and `shadow`.
 | `arcana.use.shadow_blink` | true | Cast Blink |
 | `arcana.use.shadow_swap` | true | Cast Swap |
 | `arcana.use.shadow_body` | true | Cast Body |
+| `arcana.use.chain_hook` | true | Cast Hook |
+| `arcana.use.chain_reel` | true | Cast Reel |
+| `arcana.use.chain_rend` | true | Cast Rend |
 
 The `arcana.use.*` nodes are checked on every cast, so they can be handed out
 per rank from LuckPerms without touching the plugin.
@@ -291,6 +302,31 @@ abilities:
     break-on-attack: true
     hide-armor: true
     cooldown-ticks: 700
+
+  chain_hook:
+    range: 24.0
+    travel-speed: 1.6
+    hold-ticks: 200
+    cooldown-ticks: 40
+
+  chain_reel:
+    pull-self-speed: 1.2
+    pull-entity-speed: 1.1
+    max-velocity: 2.5
+    fall-grace-ticks: 100
+    cooldown-ticks: 60
+
+  chain_rend:
+    entity-damage: 6.0
+    block-drop-chance: 0.5
+    max-block-hardness: 5.0
+    blocked-materials:
+      - BEDROCK
+      - BARRIER
+      - SPAWNER
+      - END_PORTAL_FRAME
+      - REINFORCED_DEEPSLATE
+    cooldown-ticks: 100
 ```
 
 Notes on decisions that are not obvious:
@@ -331,6 +367,19 @@ Notes on decisions that are not obvious:
   exceptions are the swap refusals that could be spammed to probe, a target
   inside a claim on cast and a fizzled channel, which cost
   `failed-cooldown-ticks`. `channel-min-speed-factor` is clamped to 0..1.
+- `chain_hook.travel-speed` is blocks per tick; at the default the claw
+  crosses its full `range` in 15 ticks. `hold-ticks` is how long the claw
+  stays latched with nothing done to it. Reel and Rend have no range of
+  their own: the hook already is the range.
+- `chain_reel.pull-self-speed` and `pull-entity-speed` are blocks per tick
+  like the gravity strengths, and `max-velocity` caps both. `fall-grace-ticks`
+  covers the caster reeled to a block, and mobs yanked by the chain; players
+  yanked take fall damage, like with Gravity: Pull.
+- `chain_rend.max-block-hardness` compares against the block's vanilla
+  hardness: 5.0 lets deepslate ores (4.5) through and refuses obsidian (50)
+  and ancient debris (30). `blocked-materials` takes Bukkit `Material`
+  names; unknown names are logged and skipped. `block-drop-chance` is
+  clamped to 0..1.
 
 ## How the sun works
 
@@ -449,6 +498,61 @@ exactly as long as the channel.
   effect is removed by anything else (milk), and on plugin disable, and the
   armor is restored on every one of those paths.
 
+## How the chain works
+
+The chain is the first **two stage** staff: Hook creates a state, Reel and
+Rend spend it. There is one hook per player, held in memory as what it is
+anchored to, its claw display and when it expires. Reel and Rend with no
+hook anchored do nothing but say so, and charge nothing. None of the three
+has a lockout group.
+
+- **Hook** fires a claw, a small chain block display, along the look
+  direction. It **travels**: every tick the head advances `travel-speed`
+  blocks and that segment is ray traced for a solid block or a living
+  entity, whichever comes first, ignoring passable blocks and fluids.
+  Entities follow the ice filters: anything living except the caster, NPCs
+  and players in creative or spectator. It also applies **Swap's claim
+  rule**, always and regardless of `respect-claims`: a target standing where
+  the caster has no build permission is refused with a message, because
+  yanking someone out of their own base is the same bypass as swapping into
+  it. Nothing found within `range` retracts the claw with a sound and no
+  cooldown. Latching charges the cooldown, says what was caught, and from
+  then on a chain of dust links is drawn every tick from the caster's hand to
+  the claw, which follows an entity anchor around. The hook releases by
+  itself after `hold-ticks`, when the anchored entity dies or leaves, when
+  the anchored block is gone, or when the distance from the caster's eyes to
+  the claw exceeds `range` because either side moved. Firing again while
+  hooked releases the current hook first and fires a new one. It also
+  releases on quit, death, world change and plugin disable, and the claw is
+  a non-persistent display tagged like the ice crystals, so it is swept on
+  startup as insurance and can never be written to disk.
+- **Reel** pulls, and what moves depends on the anchor. On a **block** the
+  caster is pulled toward the claw: a task sets the velocity toward the
+  anchor every tick, ramped up over the first eight ticks and clamped to
+  `max-velocity`, so it reads as being reeled in and stays controllable,
+  until the caster is within a block and a half of the anchor, stops moving
+  against something, or a generous time cap runs out. Fall grace for
+  `fall-grace-ticks` is refreshed every tick of the pull: the chain is
+  carrying you, unlike Blink where you teleport under your own power. On an
+  **entity** it is Gravity: Pull narrowed to one target, the same impulse
+  math with `pull-entity-speed` as the strength, a small lift, and the clamp.
+  Both release the hook when the pull finishes.
+- **Rend** spins the claw at the anchor. On an **entity** it deals
+  `entity-damage` through `LivingEntity#damage(amount, caster)`, so PvP
+  rules apply as always, with crit points circling the target. On a
+  **block** it breaks it, with `block-drop-chance` odds of the normal drops,
+  as if mined with a diamond pickaxe; the rest of the time the block simply
+  vanishes. The chance is there so this is not a way to mine diamonds
+  without ever making an iron pickaxe. Every guard must pass, or the break
+  is refused with a message, nothing is charged and the hook stays: build
+  permission at the block per GriefPrevention, the block's hardness at most
+  `max-block-hardness`, not in `blocked-materials`, and never a block with
+  an inventory (chests, barrels, shulker boxes, furnaces, hoppers), whatever
+  the list says. A successful break is **logged in CoreProtect** as the
+  caster before the block goes, so `/co inspect` shows it and a rollback
+  restores it; without that, blocks removed by a plugin leave no trace. Rend
+  releases the hook after use.
+
 ## Cooldowns and charges
 
 Cooldowns are stored in the player's `PersistentDataContainer`, which is part
@@ -474,6 +578,18 @@ is not tied to a specific GriefPrevention version and the plugin starts the same
 when it is absent. If the API changes, the check disables itself, logs it to the
 console, and the abilities keep working without claim protection.
 
+## CoreProtect
+
+Chain: Rend is the one ability that removes a block, and CoreProtect does
+not see blocks removed by plugins. So the plugin hands the break to
+CoreProtect's logging API itself, as the caster, before removing the block.
+Like the GriefPrevention hook this is done **by reflection**: a soft
+dependency, no compile time coupling. If CoreProtect is absent, disabled,
+older than API version 9, or answers unexpectedly, the plugin warns once in
+the console and Rend keeps working unlogged; the action bar then says `(not
+logged)` after a break. `/arcana list` reports whether the logging is
+active, next to the GriefPrevention line.
+
 ## Known limitations
 
 - The visual cooldown uses `setCooldown(Material, ticks)`, which in vanilla
@@ -485,6 +601,9 @@ console, and the abilities keep working without claim protection.
   staff's melee hit before the left click ability fires.
 - Leap decides whether you are airborne from the on-ground flag the client
   reports, the same one vanilla uses for fall distance.
+- Rend removes a block outside of `BlockBreakEvent`, so other plugins that
+  listen for breaks do not see it. The guards above (claims, hardness, the
+  blocklist, containers) and the CoreProtect log are what stands in for that.
 - Zenith is the one ability that places a block. It is a single `LIGHT`
   block, invisible and passable, only in air and only where the caster may
   build, tracked on disk so a crash cannot leave it behind. The sun itself is
@@ -514,7 +633,8 @@ The structure is already laid out for more than one ability:
   the group meanwhile. Ice Armor is the reference implementation, including
   the cleanup on every exit path a stateful ability needs. Solar Lantern and
   Zenith follow the same shape, and `Displays` holds the shared glowing block
-  display and orbit math.
+  display and orbit math. Chain: Hook holds state that two other abilities
+  consume, which is the shape for any multi stage staff.
 - `Ability#replacesActiveCast` lets a cast reach an ability while it is
   running, skipping the lockout and cooldown checks, so it can dismiss or
   replace the running instance. Solar Lantern uses it as an off switch.

@@ -1,6 +1,7 @@
 package com.bernhardtwo.arcana.config;
 
 import org.bukkit.Color;
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 
@@ -29,6 +30,11 @@ public final class ArcanaConfig {
     private static final ShadowBlinkSettings BLINK_DEFAULTS = new ShadowBlinkSettings(14.0, 60);
     private static final ShadowSwapSettings SWAP_DEFAULTS = new ShadowSwapSettings(20.0, true, 60, 0.15, true, true, 40, 200, 100);
     private static final ShadowBodySettings BODY_DEFAULTS = new ShadowBodySettings(100, true, true, 700);
+    private static final ChainHookSettings HOOK_DEFAULTS = new ChainHookSettings(24.0, 1.6, 200, 40);
+    private static final ChainReelSettings REEL_DEFAULTS = new ChainReelSettings(1.2, 1.1, 2.5, 100, 60);
+    private static final ChainRendSettings REND_DEFAULTS = new ChainRendSettings(6.0, 0.5, 5.0,
+            EnumSet.of(Material.BEDROCK, Material.BARRIER, Material.SPAWNER, Material.END_PORTAL_FRAME,
+                    Material.REINFORCED_DEEPSLATE), 100);
 
     private final boolean effects;
     private final TargetRules targets;
@@ -44,13 +50,17 @@ public final class ArcanaConfig {
     private final ShadowBlinkSettings shadowBlink;
     private final ShadowSwapSettings shadowSwap;
     private final ShadowBodySettings shadowBody;
+    private final ChainHookSettings chainHook;
+    private final ChainReelSettings chainReel;
+    private final ChainRendSettings chainRend;
 
     private ArcanaConfig(boolean effects, TargetRules targets, GravitySettings push, GravitySettings pull,
                          LeapSettings leap, IceSlashSettings iceSlash, IceBreakerSettings iceBreaker,
                          IceArmorSettings iceArmor, SolarLanternSettings solarLantern,
                          SolarZenithSettings solarZenith, SolarBloomSettings solarBloom,
                          ShadowBlinkSettings shadowBlink, ShadowSwapSettings shadowSwap,
-                         ShadowBodySettings shadowBody) {
+                         ShadowBodySettings shadowBody, ChainHookSettings chainHook,
+                         ChainReelSettings chainReel, ChainRendSettings chainRend) {
         this.effects = effects;
         this.targets = targets;
         this.push = push;
@@ -65,6 +75,9 @@ public final class ArcanaConfig {
         this.shadowBlink = shadowBlink;
         this.shadowSwap = shadowSwap;
         this.shadowBody = shadowBody;
+        this.chainHook = chainHook;
+        this.chainReel = chainReel;
+        this.chainRend = chainRend;
     }
 
     public static ArcanaConfig load(FileConfiguration config, Logger logger) {
@@ -82,7 +95,10 @@ public final class ArcanaConfig {
                 SolarBloomSettings.from(config.getConfigurationSection("abilities.solar_bloom"), BLOOM_DEFAULTS),
                 ShadowBlinkSettings.from(config.getConfigurationSection("abilities.shadow_blink"), BLINK_DEFAULTS),
                 ShadowSwapSettings.from(config.getConfigurationSection("abilities.shadow_swap"), SWAP_DEFAULTS),
-                ShadowBodySettings.from(config.getConfigurationSection("abilities.shadow_body"), BODY_DEFAULTS)
+                ShadowBodySettings.from(config.getConfigurationSection("abilities.shadow_body"), BODY_DEFAULTS),
+                ChainHookSettings.from(config.getConfigurationSection("abilities.chain_hook"), HOOK_DEFAULTS),
+                ChainReelSettings.from(config.getConfigurationSection("abilities.chain_reel"), REEL_DEFAULTS),
+                ChainRendSettings.from(config.getConfigurationSection("abilities.chain_rend"), REND_DEFAULTS, logger)
         );
     }
 
@@ -140,5 +156,17 @@ public final class ArcanaConfig {
 
     public ShadowBodySettings shadowBody() {
         return shadowBody;
+    }
+
+    public ChainHookSettings chainHook() {
+        return chainHook;
+    }
+
+    public ChainReelSettings chainReel() {
+        return chainReel;
+    }
+
+    public ChainRendSettings chainRend() {
+        return chainRend;
     }
 }

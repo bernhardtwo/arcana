@@ -85,19 +85,14 @@ public final class GravityAbility implements Ability {
     }
 
     private void applyImpulse(Entity entity, Vector offset, double distance, double radius, GravitySettings settings) {
-        double scale = mode == GravityMode.PUSH
-                ? Math.max(0.2, 1.0 - distance / radius)
-                : 0.4 + 0.6 * (distance / radius);
-
-        Vector impulse = offset.clone();
-        if (impulse.lengthSquared() < MIN_LENGTH) {
+        if (offset.lengthSquared() < MIN_LENGTH) {
             return;
         }
-        impulse.normalize().multiply(settings.strength() * scale);
+        Vector impulse;
         if (mode == GravityMode.PULL) {
-            impulse.multiply(-1.0);
-            impulse.setY(settings.lift());
+            impulse = pullImpulse(offset, radius, settings.strength(), settings.lift());
         } else {
+            impulse = offset.clone().normalize().multiply(settings.strength() * Math.max(0.2, 1.0 - distance / radius));
             impulse.setY(Math.max(impulse.getY(), 0.0) + settings.lift());
         }
 
@@ -116,7 +111,16 @@ public final class GravityAbility implements Ability {
         }
     }
 
-    private void clamp(Vector velocity, double max) {
+    /**
+     * The Pull impulse for one entity at {@code offset} from the center: harder
+     * from afar, so someone fleeing at the edge still comes. Shared with Chain: Reel.
+     */
+    public static Vector pullImpulse(Vector offset, double radius, double strength, double lift) {
+        double scale = 0.4 + 0.6 * Math.min(1.0, offset.length() / radius);
+        return offset.clone().normalize().multiply(-strength * scale).setY(lift);
+    }
+
+    public static void clamp(Vector velocity, double max) {
         double length = velocity.length();
         if (length > max && length > MIN_LENGTH) {
             velocity.normalize().multiply(max);

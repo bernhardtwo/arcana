@@ -7,6 +7,7 @@ author: Bernardo Vega
 website: https://github.com/bernhardtwo/arcana
 softdepend:
   - GriefPrevention
+  - CoreProtect
 commands:
   arcana:
     description: Manages the ability staffs.
@@ -51,4 +52,13 @@ permissions:
     default: true
   arcana.use.shadow_body:
     description: "Allows casting Shadow: Body."
+    default: true
+  arcana.use.chain_hook:
+    description: "Allows casting Chain: Hook."
+    default: true
+  arcana.use.chain_reel:
+    description: "Allows casting Chain: Reel."
+    default: true
+  arcana.use.chain_rend:
+    description: "Allows casting Chain: Rend."
     default: true

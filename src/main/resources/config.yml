@@ -118,3 +118,28 @@ abilities:
     break-on-attack: true
     hide-armor: true
     cooldown-ticks: 700
+
+  chain_hook:
+    range: 24.0
+    travel-speed: 1.6
+    hold-ticks: 200
+    cooldown-ticks: 40
+
+  chain_reel:
+    pull-self-speed: 1.2
+    pull-entity-speed: 1.1
+    max-velocity: 2.5
+    fall-grace-ticks: 100
+    cooldown-ticks: 60
+
+  chain_rend:
+    entity-damage: 6.0
+    block-drop-chance: 0.5
+    max-block-hardness: 5.0
+    blocked-materials:
+      - BEDROCK
+      - BARRIER
+      - SPAWNER
+      - END_PORTAL_FRAME
+      - REINFORCED_DEEPSLATE
+    cooldown-ticks: 100

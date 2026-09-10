@@ -15,7 +15,7 @@ services:
       DIFFICULTY: normal
       VIEW_DISTANCE: 6
       SIMULATION_DISTANCE: 4
-      MODRINTH_PROJECTS: luckperms,griefprevention
+      MODRINTH_PROJECTS: luckperms,griefprevention,coreprotect
       OPS: vegabernh
     volumes:
       - ./data:/data

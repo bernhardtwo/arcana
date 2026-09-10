@@ -13,16 +13,20 @@ public final class Targets {
     }
 
     public static boolean isValid(ArcanaPlugin plugin, Player caster, Entity entity) {
+        return isTargetable(caster, entity)
+                && (!plugin.settings().targets().respectClaims()
+                || !plugin.claims().isBlocked(caster, entity.getLocation()));
+    }
+
+    /** The same rules without claims, for abilities that apply their own claim rule and want to say so. */
+    public static boolean isTargetable(Player caster, Entity entity) {
         if (!(entity instanceof LivingEntity) || entity.equals(caster) || entity.hasMetadata("NPC")) {
             return false;
         }
         if (entity instanceof Player player) {
             GameMode gameMode = player.getGameMode();
-            if (gameMode == GameMode.CREATIVE || gameMode == GameMode.SPECTATOR) {
-                return false;
-            }
+            return gameMode != GameMode.CREATIVE && gameMode != GameMode.SPECTATOR;
         }
-        return !plugin.settings().targets().respectClaims()
-                || !plugin.claims().isBlocked(caster, entity.getLocation());
+        return true;
     }
 }

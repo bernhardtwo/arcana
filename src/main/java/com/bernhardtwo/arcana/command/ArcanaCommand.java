@@ -132,6 +132,7 @@ public final class ArcanaCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Component.text("  " + wand.id() + " - " + wand.displayName(), NamedTextColor.GRAY));
         }
         sender.sendMessage(info("GriefPrevention claims: " + (plugin.claims().isActive() ? "active" : "not detected")));
+        sender.sendMessage(info("CoreProtect logging: " + (plugin.coreProtect().isActive() ? "active" : "not detected")));
     }
 
     private void sendUsage(CommandSender sender, String label) {
