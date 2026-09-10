@@ -1,5 +1,6 @@
 package com.bernhardtwo.arcana.ability;
 
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 public interface Ability {
@@ -11,6 +12,11 @@ public interface Ability {
     int cooldownTicks();
 
     void cast(Player caster);
+
+    /** Cast with the block the player clicked, or null for a click in the air or on an entity. */
+    default void cast(Player caster, Block clicked) {
+        cast(caster);
+    }
 
     default String permission() {
         return "arcana.use." + id();
@@ -38,6 +44,15 @@ public interface Ability {
      */
     default boolean startsCooldownOnCast() {
         return true;
+    }
+
+    /**
+     * True while this ability is running for the player and a new cast should
+     * replace the running instance. Such a cast skips the lockout and cooldown
+     * checks; the ability itself decides what ending the old instance costs.
+     */
+    default boolean replacesActiveCast(Player player) {
+        return false;
     }
 
     /** True while this ability is running for the player and wants the rest of its group blocked meanwhile. */

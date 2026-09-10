@@ -21,6 +21,9 @@ public final class ArcanaConfig {
     private static final IceArmorSettings ARMOR_DEFAULTS =
             new IceArmorSettings(3, 1.2, 1.0, 0.12, 15, 1200, false,
                     EnumSet.of(EntityType.WARDEN, EntityType.ENDER_DRAGON, EntityType.WITHER, EntityType.GHAST));
+    private static final SolarLanternSettings LANTERN_DEFAULTS = new SolarLanternSettings(24000, 12000, 0.9);
+    private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 18000);
+    private static final SolarBloomSettings BLOOM_DEFAULTS = new SolarBloomSettings(5, 12);
 
     private final boolean effects;
     private final TargetRules targets;
@@ -30,10 +33,14 @@ public final class ArcanaConfig {
     private final IceSlashSettings iceSlash;
     private final IceBreakerSettings iceBreaker;
     private final IceArmorSettings iceArmor;
+    private final SolarLanternSettings solarLantern;
+    private final SolarZenithSettings solarZenith;
+    private final SolarBloomSettings solarBloom;
 
     private ArcanaConfig(boolean effects, TargetRules targets, GravitySettings push, GravitySettings pull,
                          LeapSettings leap, IceSlashSettings iceSlash, IceBreakerSettings iceBreaker,
-                         IceArmorSettings iceArmor) {
+                         IceArmorSettings iceArmor, SolarLanternSettings solarLantern,
+                         SolarZenithSettings solarZenith, SolarBloomSettings solarBloom) {
         this.effects = effects;
         this.targets = targets;
         this.push = push;
@@ -42,6 +49,9 @@ public final class ArcanaConfig {
         this.iceSlash = iceSlash;
         this.iceBreaker = iceBreaker;
         this.iceArmor = iceArmor;
+        this.solarLantern = solarLantern;
+        this.solarZenith = solarZenith;
+        this.solarBloom = solarBloom;
     }
 
     public static ArcanaConfig load(FileConfiguration config, Logger logger) {
@@ -53,7 +63,10 @@ public final class ArcanaConfig {
                 LeapSettings.from(config.getConfigurationSection("abilities.gravity_leap"), LEAP_DEFAULTS),
                 IceSlashSettings.from(config.getConfigurationSection("abilities.ice_slash"), SLASH_DEFAULTS),
                 IceBreakerSettings.from(config.getConfigurationSection("abilities.ice_breaker"), BREAKER_DEFAULTS),
-                IceArmorSettings.from(config.getConfigurationSection("abilities.ice_armor"), ARMOR_DEFAULTS, logger)
+                IceArmorSettings.from(config.getConfigurationSection("abilities.ice_armor"), ARMOR_DEFAULTS, logger),
+                SolarLanternSettings.from(config.getConfigurationSection("abilities.solar_lantern"), LANTERN_DEFAULTS),
+                SolarZenithSettings.from(config.getConfigurationSection("abilities.solar_zenith"), ZENITH_DEFAULTS),
+                SolarBloomSettings.from(config.getConfigurationSection("abilities.solar_bloom"), BLOOM_DEFAULTS)
         );
     }
 
@@ -87,5 +100,17 @@ public final class ArcanaConfig {
 
     public IceArmorSettings iceArmor() {
         return iceArmor;
+    }
+
+    public SolarLanternSettings solarLantern() {
+        return solarLantern;
+    }
+
+    public SolarZenithSettings solarZenith() {
+        return solarZenith;
+    }
+
+    public SolarBloomSettings solarBloom() {
+        return solarBloom;
     }
 }

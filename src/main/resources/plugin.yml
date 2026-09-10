@@ -34,3 +34,12 @@ permissions:
   arcana.use.ice_armor:
     description: "Allows casting Ice: Armor."
     default: true
+  arcana.use.solar_lantern:
+    description: "Allows casting Solar: Lantern."
+    default: true
+  arcana.use.solar_zenith:
+    description: "Allows casting Solar: Zenith."
+    default: true
+  arcana.use.solar_bloom:
+    description: "Allows casting Solar: Bloom."
+    default: true

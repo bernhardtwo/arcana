@@ -70,3 +70,21 @@ abilities:
       - ENDER_DRAGON
       - WITHER
       - GHAST
+
+  solar_lantern:
+    duration-ticks: 24000
+    cooldown-ticks: 12000
+    orbit-radius: 0.9
+
+  solar_zenith:
+    height: 6
+    radius: 20.0
+    burn-ticks: 60
+    heal-amount: 1.0
+    tick-interval: 20
+    marker-interval: 10
+    cooldown-ticks: 18000
+
+  solar_bloom:
+    max-charges: 5
+    charge-regen-minutes: 12

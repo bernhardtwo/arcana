@@ -7,6 +7,7 @@ import com.bernhardtwo.arcana.item.Wand;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -56,11 +57,11 @@ public final class AbilityUseListener implements Listener {
 
         Player player = event.getPlayer();
         if (left) {
-            castLeftClick(player, wand.get(), held);
+            castLeftClick(player, wand.get(), held, action == Action.LEFT_CLICK_BLOCK ? event.getClickedBlock() : null);
             return;
         }
         String abilityId = player.isSneaking() ? wand.get().sneakRightClickAbility() : wand.get().rightClickAbility();
-        tryCast(player, abilityId, held);
+        tryCast(player, abilityId, held, null);
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
@@ -73,7 +74,7 @@ public final class AbilityUseListener implements Listener {
         if (wand.isEmpty()) {
             return;
         }
-        castLeftClick(player, wand.get(), held);
+        castLeftClick(player, wand.get(), held, null);
     }
 
     @EventHandler
@@ -81,16 +82,16 @@ public final class AbilityUseListener implements Listener {
         lastLeftClickTick.remove(event.getPlayer().getUniqueId());
     }
 
-    private void castLeftClick(Player player, Wand wand, ItemStack held) {
+    private void castLeftClick(Player player, Wand wand, ItemStack held, Block clicked) {
         int tick = Bukkit.getCurrentTick();
         Integer previous = lastLeftClickTick.put(player.getUniqueId(), tick);
         if (previous != null && previous == tick) {
             return;
         }
-        tryCast(player, wand.leftClickAbility(), held);
+        tryCast(player, wand.leftClickAbility(), held, clicked);
     }
 
-    private void tryCast(Player player, String abilityId, ItemStack held) {
+    private void tryCast(Player player, String abilityId, ItemStack held, Block clicked) {
         // An empty wand slot does nothing at all. The message below is only for a slot naming a missing ability.
         if (abilityId == null) {
             return;
@@ -110,21 +111,25 @@ public final class AbilityUseListener implements Listener {
             return;
         }
 
-        Component lockout = lockoutMessage(player, selected);
-        if (lockout != null) {
-            player.sendActionBar(lockout);
-            return;
+        // A recast replaces the running instance; the ability charges for the old one itself.
+        if (!selected.replacesActiveCast(player)) {
+            Component lockout = lockoutMessage(player, selected);
+            if (lockout != null) {
+                player.sendActionBar(lockout);
+                return;
+            }
+            long remaining = plugin.store().remainingMillis(player, selected.id());
+            if (remaining > 0L) {
+                player.sendActionBar(warn(selected.displayName() + " ready in " + format(remaining)));
+                return;
+            }
         }
 
-        long remaining = plugin.store().remainingMillis(player, selected.id());
-        if (remaining > 0L) {
-            player.sendActionBar(warn(selected.displayName() + " ready in " + format(remaining)));
-            return;
-        }
-
+        // Sent before the cast so an ability can overwrite it with something more useful in the same tick.
+        player.sendActionBar(Component.text(selected.displayName(), NamedTextColor.LIGHT_PURPLE));
         casting = true;
         try {
-            selected.cast(player);
+            selected.cast(player, clicked);
         } finally {
             casting = false;
         }
@@ -135,7 +140,6 @@ public final class AbilityUseListener implements Listener {
                 player.setCooldown(held.getType(), selected.cooldownTicks());
             }
         }
-        player.sendActionBar(Component.text(selected.displayName(), NamedTextColor.LIGHT_PURPLE));
     }
 
     private Component lockoutMessage(Player player, Ability selected) {

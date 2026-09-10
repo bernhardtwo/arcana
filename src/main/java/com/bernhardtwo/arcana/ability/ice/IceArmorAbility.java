@@ -2,6 +2,7 @@ package com.bernhardtwo.arcana.ability.ice;
 
 import com.bernhardtwo.arcana.ArcanaPlugin;
 import com.bernhardtwo.arcana.ability.Ability;
+import com.bernhardtwo.arcana.ability.Displays;
 import com.bernhardtwo.arcana.config.IceArmorSettings;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -12,13 +13,8 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.BlockDisplay;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.util.Transformation;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -98,18 +94,8 @@ public final class IceArmorAbility implements Ability {
         Location center = orbitCenter(caster, settings);
 
         for (int i = 0; i < settings.charges(); i++) {
-            Location at = orbitPoint(center, armor.angle, i, settings.charges(), settings.orbitRadius());
-            armor.crystals.add(world.spawn(at, BlockDisplay.class, display -> {
-                display.setBlock(Material.ICE.createBlockData());
-                display.setTransformation(new Transformation(
-                        new Vector3f(-CRYSTAL_SCALE / 2.0f), new AxisAngle4f(),
-                        new Vector3f(CRYSTAL_SCALE), new AxisAngle4f()));
-                display.setBrightness(new Display.Brightness(15, 15));
-                display.setTeleportDuration(1);
-                // Never written to disk: a crash or a hard kill cannot leave orphans in the world.
-                display.setPersistent(false);
-                display.getPersistentDataContainer().set(plugin.iceCrystalKey(), PersistentDataType.BYTE, (byte) 1);
-            }));
+            Location at = Displays.orbitPoint(center, armor.angle, i, settings.charges(), settings.orbitRadius());
+            armor.crystals.add(Displays.spawn(plugin, at, Material.ICE, CRYSTAL_SCALE));
         }
         active.put(caster.getUniqueId(), armor);
 
@@ -164,7 +150,7 @@ public final class IceArmorAbility implements Ability {
             Location center = orbitCenter(player, settings);
             int count = armor.crystals.size();
             for (int i = 0; i < count; i++) {
-                armor.crystals.get(i).teleport(orbitPoint(center, armor.angle, i, count, settings.orbitRadius()));
+                armor.crystals.get(i).teleport(Displays.orbitPoint(center, armor.angle, i, count, settings.orbitRadius()));
             }
         }
         for (UUID id : expired) {
@@ -209,11 +195,6 @@ public final class IceArmorAbility implements Ability {
 
     private static Location orbitCenter(Player player, IceArmorSettings settings) {
         return player.getLocation().add(0.0, settings.orbitHeight(), 0.0);
-    }
-
-    private static Location orbitPoint(Location center, double angle, int index, int count, double radius) {
-        double theta = angle + 2.0 * Math.PI * index / count;
-        return center.clone().add(Math.cos(theta) * radius, 0.0, Math.sin(theta) * radius);
     }
 
     private IceArmorSettings settings() {

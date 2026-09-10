@@ -3,7 +3,7 @@
 Item-bound magic abilities for Paper servers. A staff in hand, right click,
 and something happens around you.
 
-Two staffs so far.
+Three staffs so far.
 
 **Gravity Staff** (blaze rod)
 
@@ -20,6 +20,14 @@ Two staffs so far.
 | Ice: Slash | Left click | Frost arc in front of the caster, plus a snowball that also freezes |
 | Ice: Breaker | Right click | Spiral ice beam to whatever you are aiming at, up to 24 blocks |
 | Ice: Armor | Sneak + right click | Orbiting ice crystals that each absorb one attack |
+
+**Solar Staff** (breeze rod)
+
+| Ability | How to cast | What it does |
+|---|---|---|
+| Solar: Lantern | Right click | Night vision and a small orbiting light, for as long as you need it |
+| Solar: Zenith | Sneak + right click | A sun above you that burns hostiles and heals the peaceful until you walk away |
+| Solar: Bloom | Left click on a block | Bone meal without bone meal, from a pool of charges |
 
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
@@ -64,7 +72,7 @@ All under the `arcana.admin` permission (op only by default).
 /arcana reload                  re-reads config.yml without a restart
 ```
 
-Registered staffs: `gravity` and `ice`.
+Registered staffs: `gravity`, `ice` and `solar`.
 
 ## Permissions
 
@@ -77,6 +85,9 @@ Registered staffs: `gravity` and `ice`.
 | `arcana.use.ice_slash` | true | Cast Slash |
 | `arcana.use.ice_breaker` | true | Cast Breaker |
 | `arcana.use.ice_armor` | true | Cast Armor |
+| `arcana.use.solar_lantern` | true | Cast Lantern |
+| `arcana.use.solar_zenith` | true | Cast Zenith |
+| `arcana.use.solar_bloom` | true | Cast Bloom |
 
 The `arcana.use.*` nodes are checked on every cast, so they can be handed out
 per rank from LuckPerms without touching the plugin.
@@ -213,6 +224,24 @@ abilities:
       - ENDER_DRAGON
       - WITHER
       - GHAST
+
+  solar_lantern:
+    duration-ticks: 24000
+    cooldown-ticks: 12000
+    orbit-radius: 0.9
+
+  solar_zenith:
+    height: 6
+    radius: 20.0
+    burn-ticks: 60
+    heal-amount: 1.0
+    tick-interval: 20
+    marker-interval: 10
+    cooldown-ticks: 18000
+
+  solar_bloom:
+    max-charges: 5
+    charge-regen-minutes: 12
 ```
 
 Notes on decisions that are not obvious:
@@ -235,6 +264,54 @@ Notes on decisions that are not obvious:
   `snowball-damage` and `damage`.
 - `strong-attackers` takes Bukkit `EntityType` names. Unknown names are logged
   and skipped. `orbit-speed` is radians per tick.
+- `solar_zenith` ignores `targets.*`: hostile is anything Bukkit tags as
+  `Enemy`, peaceful is any other mob. Players in creative or spectator and
+  NPCs are never burned. `heal-amount` is in half hearts, like health.
+- `solar_bloom` has no `cooldown-ticks`. Its limit is the charge pool, and
+  `charge-regen-minutes` is read on every use, so changing it applies to
+  charges already regenerating.
+
+## How the sun works
+
+The three solar abilities have no lockout group: none of them blocks the
+others.
+
+- **Lantern** is a personal light for mining. It grants Night Vision for
+  `duration-ticks`, particles hidden and icon visible, and spawns one small
+  glowing display that orbits the caster at `orbit-radius`. It modifies no
+  block. Its cooldown is **proportional**: when a lantern ends, for any
+  reason, the cooldown is `cooldown-ticks` times the fraction of the duration
+  that was used. Running the full 20 minutes costs the full 10 minute
+  cooldown; ending after 5 of 20 minutes costs 2.5 minutes. Recasting while
+  your own lantern is up is always allowed: it ends the current instance,
+  charges that instance's proportional cooldown and starts a fresh one. With
+  no lantern up, the normal cooldown check applies. It ends when the duration
+  elapses, on recast, on quit, on death, on world change and on plugin
+  disable, and Night Vision is removed on every one of those paths.
+- **Zenith** is a static sun `height` blocks above the cast point: a large
+  glowing display, plus **one** real `LIGHT` block at that position, placed
+  only if the block there is air and GriefPrevention lets the caster build
+  there. The light block is removed on every end path and its position is
+  written to `plugins/Arcana/lights.yml` the moment it is placed, so after a
+  crash the plugin removes any recorded light block still present on the next
+  start. Every `tick-interval` ticks, for living entities within `radius` of
+  the sun: hostile mobs are set on fire for `burn-ticks`, everywhere; other
+  players are set on fire only when there is no claim at their location, which
+  matches PvP being free only outside claims; the caster, villagers, tamed
+  animals and every other non-hostile mob heal `heal-amount`, capped at max
+  health, with heart particles when something was actually healed. An orange
+  particle ring is drawn on the ground at `radius` every `marker-interval`
+  ticks, visible to everyone and capped at 96 points so a big radius cannot
+  flood. The sun has **no time cap**, by design: it ends when the caster
+  leaves the radius, and also on quit, death, world change and plugin disable.
+  The full cooldown starts when the sun ends, like Ice Armor.
+- **Bloom** applies bone meal to the clicked block, through
+  `Block#applyBoneMeal`, so it does exactly what a bone meal item would. It
+  needs build permission at that block. It is limited by a pool of
+  `max-charges`, one regenerating every `charge-regen-minutes`, and a charge
+  is spent **only** when the bone meal did something: clicking stone or a
+  fully grown crop costs nothing. Success shows happy villager particles and
+  an action bar with the charges left and the time until the next one.
 
 ## Cooldowns and charges
 
@@ -272,6 +349,13 @@ console, and the abilities keep working without claim protection.
   staff's melee hit before the left click ability fires.
 - Leap decides whether you are airborne from the on-ground flag the client
   reports, the same one vanilla uses for fall distance.
+- Zenith is the one ability that places a block. It is a single `LIGHT`
+  block, invisible and passable, only in air and only where the caster may
+  build, tracked on disk so a crash cannot leave it behind. If the server dies
+  between placing the block and writing `lights.yml` (microseconds), that one
+  block survives until someone breaks it or a zenith is cast there again.
+- The Zenith ring is snapped to the terrain a few blocks around the cast
+  height. On a cliff edge it floats or sinks; it is a marker, not geometry.
 - Dragon breath is an area effect cloud, not a living entity or a projectile,
   so it passes through Ice Armor like environmental damage.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.
@@ -292,7 +376,15 @@ The structure is already laid out for more than one ability:
 - An ability with a duration returns false from `startsCooldownOnCast` and
   starts its own cooldown when it ends. `blocksGroupWhileActive` lets it hold
   the group meanwhile. Ice Armor is the reference implementation, including
-  the cleanup on every exit path a stateful ability needs.
+  the cleanup on every exit path a stateful ability needs. Solar Lantern and
+  Zenith follow the same shape, and `Displays` holds the shared glowing block
+  display and orbit math.
+- `Ability#replacesActiveCast` lets an ability accept a recast while it is
+  running, skipping the lockout and cooldown checks. Solar Lantern uses it.
+- `Ability#cast(Player, Block)` receives the clicked block for left clicks on
+  a block, null otherwise. Solar Bloom is the only one that needs it.
+- Abilities limited by charges instead of a cooldown read and spend them
+  through `PlayerStore`, the same container the cooldowns live in.
 - Items are identified by `PersistentDataContainer`, never by name or lore, so
   renaming a stick in an anvil forges nothing.
 

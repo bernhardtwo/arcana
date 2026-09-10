@@ -35,23 +35,41 @@ public final class ClaimGuard {
     }
 
     public boolean isBlocked(Player caster, Location location) {
-        if (!active) {
+        Object claim = claimAt(location);
+        if (claim == null) {
             return false;
         }
         try {
-            Object claim = getClaimAt.invoke(dataStore, location, false, null);
-            if (claim == null) {
-                return false;
-            }
             if (checkPermission != null) {
                 return checkPermission.invoke(claim, caster, buildPermission, null) != null;
             }
             return allowBuild.invoke(claim, caster, Material.STONE) != null;
         } catch (ReflectiveOperationException | RuntimeException ex) {
-            owner.getLogger().log(Level.WARNING, "GriefPrevention responded unexpectedly, claim checks disabled", ex);
-            active = false;
+            disable(ex);
             return false;
         }
+    }
+
+    /** Whether any claim covers the location, regardless of who owns it. False when GriefPrevention is absent. */
+    public boolean hasClaimAt(Location location) {
+        return claimAt(location) != null;
+    }
+
+    private Object claimAt(Location location) {
+        if (!active) {
+            return null;
+        }
+        try {
+            return getClaimAt.invoke(dataStore, location, false, null);
+        } catch (ReflectiveOperationException | RuntimeException ex) {
+            disable(ex);
+            return null;
+        }
+    }
+
+    private void disable(Exception ex) {
+        owner.getLogger().log(Level.WARNING, "GriefPrevention responded unexpectedly, claim checks disabled", ex);
+        active = false;
     }
 
     private void setup() {
