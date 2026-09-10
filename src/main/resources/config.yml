@@ -39,3 +39,20 @@ abilities:
     forward-boost: 0.35
     cooldown-ticks: 20
     fall-grace-ticks: 100
+
+  ice_slash:
+    range: 3.5
+    arc-degrees: 70.0
+    slash-damage: 4.0
+    snowball-damage: 3.0
+    snowball-speed: 1.8
+    freeze-ticks: 60
+    slow-duration-ticks: 40
+    cooldown-ticks: 30
+
+  ice_breaker:
+    range: 24.0
+    damage: 7.0
+    freeze-ticks: 100
+    slow-duration-ticks: 60
+    cooldown-ticks: 120

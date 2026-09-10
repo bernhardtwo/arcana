@@ -3,13 +3,24 @@
 Item-bound magic abilities for Paper servers. A staff in hand, right click,
 and something happens around you.
 
-First staff: **gravity**. A single item with three abilities.
+Two staffs so far.
+
+**Gravity Staff** (blaze rod)
 
 | Ability | How to cast | What it does |
 |---|---|---|
 | Gravity: Push | Right click | Repels every living thing around the caster |
 | Gravity: Pull | Sneak + right click | Drags every living thing within the radius toward the caster |
 | Gravity: Leap | Left click, while airborne | A second jump in the air, once per jump, with a soft landing |
+
+**Ice Staff** (end rod)
+
+| Ability | How to cast | What it does |
+|---|---|---|
+| Ice: Slash | Left click | Frost arc in front of the caster, plus a snowball that also freezes |
+| Ice: Breaker | Right click | Spiral ice beam to whatever you are aiming at, up to 24 blocks |
+
+Sneak + right click on the ice staff is reserved for Ice Armor, coming later.
 
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
@@ -54,7 +65,7 @@ All under the `arcana.admin` permission (op only by default).
 /arcana reload                  re-reads config.yml without a restart
 ```
 
-The only staff registered today is `gravity`.
+Registered staffs: `gravity` and `ice`.
 
 ## Permissions
 
@@ -64,6 +75,8 @@ The only staff registered today is `gravity`.
 | `arcana.use.gravity_push` | true | Cast Push |
 | `arcana.use.gravity_pull` | true | Cast Pull |
 | `arcana.use.gravity_leap` | true | Cast Leap |
+| `arcana.use.ice_slash` | true | Cast Slash |
+| `arcana.use.ice_breaker` | true | Cast Breaker |
 
 The `arcana.use.*` nodes are checked on every cast, so they can be handed out
 per rank from LuckPerms without touching the plugin.
@@ -89,6 +102,32 @@ velocity, sets the vertical one to `jump-power`, and adds `forward-boost` along
 the look direction flattened to the horizontal plane. It only casts while
 airborne and once per airborne period, so it is a double jump, not flight. The
 landing is covered by its own `fall-grace-ticks`.
+
+## How the ice works
+
+Both ice abilities share the `ice` lockout group: while either is on cooldown,
+neither can be cast. Everything they do is damage and particles. They never
+place ice, freeze water or touch a block, because that is a grief vector and a
+claims headache.
+
+Damage always goes through `LivingEntity#damage(amount, caster)`. The kill is
+attributed to the caster, and GriefPrevention or any PvP plugin can cancel the
+hit the same way it cancels a sword swing, so the abilities inherit the
+server's PvP rules for free. The frost read (freeze ticks and Slowness II) is
+only applied when the damage actually went through.
+
+- **Slash** hits every valid target within `range` whose direction from the
+  caster, on the horizontal plane, is within `arc-degrees` of the look
+  direction, for `slash-damage`. It also launches a snowball tagged as ours;
+  vanilla snowballs deal no damage, so the plugin sets `snowball-damage` on the
+  damage event instead of applying it by hand, which keeps vanilla knockback and
+  invulnerability frames. Left clicking a mob also lands the staff's normal
+  melee hit, and the slash stacks on top of it. That is intended.
+- **Breaker** ray traces blocks and entities from the eye up to `range`,
+  ignoring passable blocks and fluids, and takes whichever is closer. The hit
+  is resolved before the spiral is drawn, so it never feels like a shot did not
+  register. On an entity it deals `damage` plus freeze and slow; on a block it
+  is only a particle burst. The spiral is capped at 160 particles per cast.
 
 ## Configuration
 
@@ -121,6 +160,23 @@ abilities:
     forward-boost: 0.35
     cooldown-ticks: 20
     fall-grace-ticks: 100
+
+  ice_slash:
+    range: 3.5
+    arc-degrees: 70.0
+    slash-damage: 4.0
+    snowball-damage: 3.0
+    snowball-speed: 1.8
+    freeze-ticks: 60
+    slow-duration-ticks: 40
+    cooldown-ticks: 30
+
+  ice_breaker:
+    range: 24.0
+    damage: 7.0
+    freeze-ticks: 100
+    slow-duration-ticks: 60
+    cooldown-ticks: 120
 ```
 
 Notes on decisions that are not obvious:
@@ -135,6 +191,12 @@ Notes on decisions that are not obvious:
 - `gravity_leap` has no radius or targets: it never touches anyone but the
   caster. Its `cooldown-ticks` is short because the real limit is one use per
   airborne period.
+- The ice abilities ignore `targets.players`, `hostiles`, `passives` and
+  `armor-stands`: they hit anything living except the caster, NPCs, and
+  players in creative or spectator. They do honor `respect-claims`.
+- `freeze-ticks` below 140 never deals freezing damage on its own; it is the
+  shiver and the frost overlay. Damage is only `slash-damage`,
+  `snowball-damage` and `damage`.
 
 ## GriefPrevention
 
@@ -171,8 +233,8 @@ The structure is already laid out for more than one ability:
 - `Wand` maps an item to three slots: right click, sneak + right click and
   left click. The left click slot may be null. A new staff is one line.
 - `Ability#lockoutGroup` lets a set of abilities share a lockout: while one is
-  on cooldown, none of the others in the group can be cast. The gravity
-  abilities do not use it.
+  on cooldown, none of the others in the group can be cast. The ice abilities
+  use it, the gravity ones do not.
 - Items are identified by `PersistentDataContainer`, never by name or lore, so
   renaming a stick in an anvil forges nothing.
 

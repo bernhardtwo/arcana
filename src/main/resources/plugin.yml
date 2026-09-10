@@ -25,3 +25,9 @@ permissions:
   arcana.use.gravity_leap:
     description: "Allows casting Gravity: Leap."
     default: true
+  arcana.use.ice_slash:
+    description: "Allows casting Ice: Slash."
+    default: true
+  arcana.use.ice_breaker:
+    description: "Allows casting Ice: Breaker."
+    default: true

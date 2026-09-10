@@ -28,6 +28,8 @@ public final class AbilityUseListener implements Listener {
     private final ArcanaPlugin plugin;
     // Swinging at an entity fires both PlayerInteractEvent and an attack in the same tick.
     private final Map<UUID, Integer> lastLeftClickTick = new HashMap<>();
+    // Abilities that deal damage through the API fire EntityDamageByEntityEvent with the caster as damager.
+    private boolean casting;
 
     public AbilityUseListener(ArcanaPlugin plugin) {
         this.plugin = plugin;
@@ -63,7 +65,7 @@ public final class AbilityUseListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
     public void onAttack(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player player)) {
+        if (casting || !(event.getDamager() instanceof Player player)) {
             return;
         }
         ItemStack held = player.getInventory().getItemInMainHand();
@@ -123,7 +125,12 @@ public final class AbilityUseListener implements Listener {
             return;
         }
 
-        selected.cast(player);
+        casting = true;
+        try {
+            selected.cast(player);
+        } finally {
+            casting = false;
+        }
         plugin.cooldowns().start(id, selected.id(), selected.cooldownTicks());
         // The vanilla indicator is per material, so a short cooldown must not overwrite a longer one still running.
         if (held != null && player.getCooldown(held.getType()) < selected.cooldownTicks()) {
