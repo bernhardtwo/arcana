@@ -58,6 +58,21 @@ public final class PlayerStore {
         return true;
     }
 
+    /** Admin reset: what was actually removed, so the command can say so. */
+    public record Cleared(boolean cooldown, boolean charges) {
+    }
+
+    /** Drops the cooldown and the charge pool of one ability. A pool with no keys is already full. */
+    public Cleared clear(Player player, String abilityId) {
+        PersistentDataContainer data = player.getPersistentDataContainer();
+        boolean cooldown = data.has(cooldownKey(abilityId), PersistentDataType.LONG);
+        boolean charges = data.has(chargesKey(abilityId), PersistentDataType.INTEGER);
+        data.remove(cooldownKey(abilityId));
+        data.remove(chargesKey(abilityId));
+        data.remove(regenKey(abilityId));
+        return new Cleared(cooldown, charges);
+    }
+
     private record Pool(int count, long lastRegen) {
     }
 

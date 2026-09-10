@@ -10,7 +10,7 @@ softdepend:
 commands:
   arcana:
     description: Manages the ability staffs.
-    usage: /arcana give <player> <staff> | /arcana list | /arcana reload
+    usage: /arcana give <player> <staff> | /arcana list | /arcana reload | /arcana reset [player] [ability]
     permission: arcana.admin
 permissions:
   arcana.admin:

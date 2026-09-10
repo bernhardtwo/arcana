@@ -70,7 +70,15 @@ All under the `arcana.admin` permission (op only by default).
 /arcana give <player> <staff>   hands out a staff
 /arcana list                    registered staffs and GriefPrevention status
 /arcana reload                  re-reads config.yml without a restart
+/arcana reset [player]          clears every cooldown and refills every charge pool
+/arcana reset [player] <id>     clears only that ability, for example solar_zenith
 ```
+
+`reset` defaults to the sender and only works on online players, because
+the cooldowns live in the player's data container. It reports what it
+removed, `Cleared 4 cooldowns and refilled 1 charge pool for vegabernh`, and
+never errors on a player who has none. It exists for balancing: without it
+the only way to skip a 15 minute cooldown is deleting the playerdata file.
 
 Registered staffs: `gravity`, `ice` and `solar`.
 
