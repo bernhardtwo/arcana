@@ -53,8 +53,10 @@ public final class AbilityItems {
         if (abilityId == null) {
             return;
         }
-        String name = plugin.abilities().find(abilityId).map(Ability::displayName).orElse(abilityId);
-        lore.add(line(label + name));
+        Optional<Ability> ability = plugin.abilities().find(abilityId);
+        String name = ability.map(Ability::displayName).orElse(abilityId);
+        String hint = ability.map(Ability::loreHint).orElse(null);
+        lore.add(line(label + name + (hint == null ? "" : " (" + hint + ")")));
     }
 
     private static Component line(String text) {

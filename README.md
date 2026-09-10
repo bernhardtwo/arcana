@@ -25,7 +25,7 @@ Three staffs so far.
 
 | Ability | How to cast | What it does |
 |---|---|---|
-| Solar: Lantern | Right click | Night vision and a small orbiting light, for as long as you need it |
+| Solar: Lantern | Right click (toggle) | Night vision and a small orbiting light, right click again to put it out |
 | Solar: Zenith | Sneak + right click | A sun above you that burns hostiles and heals the peaceful until you walk away |
 | Solar: Bloom | Left click on a block | Bone meal without bone meal, from a pool of charges |
 
@@ -281,20 +281,16 @@ others.
 - **Lantern** is a personal light for mining. It grants Night Vision for
   `duration-ticks`, particles hidden and icon visible, and spawns one small
   glowing display that orbits the caster at `orbit-radius`. It modifies no
-  block. Its cooldown is **proportional to the lit time**. A lantern session
-  accumulates every tick it has been lit, across recasts, and when the session
-  ends, for any reason, the cooldown is `cooldown-ticks` times
+  block. Right click is a **toggle**: with no lantern lit and no cooldown
+  running it lights one, and with a lantern lit it dismisses it. Dismissing
+  never checks the cooldown. The cooldown is **proportional to the lit
+  time**: when the lantern ends, for any reason, it is `cooldown-ticks` times
   `min(1, lit / duration-ticks)`. Running the full 20 minutes costs the full
-  10 minute cooldown; ending after 5 minutes costs 2.5 minutes. Recasting
-  while your own lantern is up is always allowed and refreshes the light back
-  to the full `duration-ticks`, so topping up before a long trip works, but
-  the accumulated time is kept: continuous light is possible, and once 20
-  minutes of lit time have piled up the full cooldown is owed and never goes
-  back down. Every recast shows the bill so far in the action bar. With no
-  lantern up, the normal cooldown check applies. The session ends, and its
-  total is cleared, when the light runs out without a recast, on quit, on
-  death, on world change and on plugin disable, and Night Vision is removed
-  on every one of those paths.
+  10 minute cooldown; dismissing after 5 minutes costs 2.5 minutes. The
+  action bar says so on lighting, on dismissing (with the cooldown charged)
+  and once when under a minute of light remains. The lantern ends on
+  dismiss, when the light runs out, on quit, on death, on world change and on
+  plugin disable, and Night Vision is removed on every one of those paths.
 - **Zenith** is a static sun `height` blocks above the cast point: a large
   glowing display, plus **one** real `LIGHT` block at that position, placed
   only if the block there is air and GriefPrevention lets the caster build
@@ -388,8 +384,11 @@ The structure is already laid out for more than one ability:
   the cleanup on every exit path a stateful ability needs. Solar Lantern and
   Zenith follow the same shape, and `Displays` holds the shared glowing block
   display and orbit math.
-- `Ability#replacesActiveCast` lets an ability accept a recast while it is
-  running, skipping the lockout and cooldown checks. Solar Lantern uses it.
+- `Ability#replacesActiveCast` lets a cast reach an ability while it is
+  running, skipping the lockout and cooldown checks, so it can dismiss or
+  replace the running instance. Solar Lantern uses it as an off switch.
+- `Ability#loreHint` appends a short note to the wand lore, such as
+  `(toggle)`.
 - `Ability#cast(Player, Block)` receives the clicked block for left clicks on
   a block, null otherwise. Solar Bloom is the only one that needs it.
 - Abilities limited by charges instead of a cooldown read and spend them

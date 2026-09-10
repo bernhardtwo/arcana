@@ -18,6 +18,11 @@ public interface Ability {
         cast(caster);
     }
 
+    /** Short note appended to the wand lore, such as "toggle". Null for none. */
+    default String loreHint() {
+        return null;
+    }
+
     default String permission() {
         return "arcana.use." + id();
     }
@@ -47,9 +52,10 @@ public interface Ability {
     }
 
     /**
-     * True while this ability is running for the player and a new cast should
-     * replace the running instance. Such a cast skips the lockout and cooldown
-     * checks; the ability itself decides what ending the old instance costs.
+     * True while this ability is running for the player and a cast should reach
+     * the ability anyway, to dismiss or replace the running instance. Such a
+     * cast skips the lockout and cooldown checks; the ability itself decides
+     * what ending the old instance costs.
      */
     default boolean replacesActiveCast(Player player) {
         return false;
