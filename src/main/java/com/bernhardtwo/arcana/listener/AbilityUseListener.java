@@ -78,7 +78,6 @@ public final class AbilityUseListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        plugin.cooldowns().forget(event.getPlayer().getUniqueId());
         lastLeftClickTick.remove(event.getPlayer().getUniqueId());
     }
 
@@ -111,14 +110,13 @@ public final class AbilityUseListener implements Listener {
             return;
         }
 
-        UUID id = player.getUniqueId();
         Component lockout = lockoutMessage(player, selected);
         if (lockout != null) {
             player.sendActionBar(lockout);
             return;
         }
 
-        long remaining = plugin.cooldowns().remainingMillis(id, selected.id());
+        long remaining = plugin.store().remainingMillis(player, selected.id());
         if (remaining > 0L) {
             player.sendActionBar(warn(selected.displayName() + " ready in " + format(remaining)));
             return;
@@ -131,7 +129,7 @@ public final class AbilityUseListener implements Listener {
             casting = false;
         }
         if (selected.startsCooldownOnCast()) {
-            plugin.cooldowns().start(id, selected.id(), selected.cooldownTicks());
+            plugin.store().startCooldown(player, selected.id(), selected.cooldownTicks());
             // The vanilla indicator is per material, so a short cooldown must not overwrite a longer one still running.
             if (held != null && player.getCooldown(held.getType()) < selected.cooldownTicks()) {
                 player.setCooldown(held.getType(), selected.cooldownTicks());
@@ -152,7 +150,7 @@ public final class AbilityUseListener implements Listener {
             if (other.blocksGroupWhileActive(player)) {
                 return warn(other.displayName() + " blocks " + selected.displayName() + " while active");
             }
-            long left = plugin.cooldowns().remainingMillis(player.getUniqueId(), other.id());
+            long left = plugin.store().remainingMillis(player, other.id());
             if (left > 0L) {
                 return warn(other.displayName() + " blocks " + selected.displayName() + " for " + format(left));
             }

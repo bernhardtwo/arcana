@@ -1,8 +1,8 @@
 package com.bernhardtwo.arcana;
 
 import com.bernhardtwo.arcana.ability.AbilityRegistry;
-import com.bernhardtwo.arcana.ability.CooldownTracker;
 import com.bernhardtwo.arcana.ability.FallGrace;
+import com.bernhardtwo.arcana.ability.PlayerStore;
 import com.bernhardtwo.arcana.ability.gravity.GravityAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityLeapAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityMode;
@@ -35,7 +35,7 @@ public final class ArcanaPlugin extends JavaPlugin {
     private ArcanaConfig settings;
     private AbilityRegistry abilities;
     private WandRegistry wands;
-    private CooldownTracker cooldowns;
+    private PlayerStore store;
     private FallGrace fallGrace;
     private ClaimGuard claims;
     private Frost frost;
@@ -49,7 +49,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         iceCrystalKey = new NamespacedKey(this, "ice_crystal");
         settings = ArcanaConfig.load(getConfig(), getLogger());
         sweepOrphanedCrystals();
-        cooldowns = new CooldownTracker();
+        store = new PlayerStore(this);
         fallGrace = new FallGrace();
         claims = new ClaimGuard(this);
         frost = new Frost();
@@ -144,8 +144,8 @@ public final class ArcanaPlugin extends JavaPlugin {
         return wands;
     }
 
-    public CooldownTracker cooldowns() {
-        return cooldowns;
+    public PlayerStore store() {
+        return store;
     }
 
     public FallGrace fallGrace() {

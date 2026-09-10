@@ -179,9 +179,13 @@ public final class IceArmorAbility implements Ability {
             return;
         }
         armor.crystals.forEach(BlockDisplay::remove);
-        plugin.cooldowns().start(player, id(), cooldownTicks());
+        // Still online during PlayerQuitEvent, so the cooldown started on quit is saved with the player.
         Player online = Bukkit.getPlayer(player);
-        if (online != null && message != null) {
+        if (online == null) {
+            return;
+        }
+        plugin.store().startCooldown(online, id(), cooldownTicks());
+        if (message != null) {
             online.sendActionBar(Component.text(message, NamedTextColor.AQUA));
         }
     }

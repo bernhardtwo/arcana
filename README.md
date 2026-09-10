@@ -236,6 +236,20 @@ Notes on decisions that are not obvious:
 - `strong-attackers` takes Bukkit `EntityType` names. Unknown names are logged
   and skipped. `orbit-speed` is radians per tick.
 
+## Cooldowns and charges
+
+Cooldowns are stored in the player's `PersistentDataContainer`, which is part
+of the player data file, so they survive a relog and a server restart. What is
+stored is the absolute expiry time in epoch millis, not the remaining ticks:
+waiting offline costs exactly the same as waiting online, and a crash loses at
+most what the server had not yet saved. The write happens the moment the
+cooldown starts. There is no memory cache, the container is the store.
+
+Abilities limited by charges instead of a cooldown use the same container: a
+charge count and the timestamp of the last regeneration. Regeneration is
+computed from the wall clock whenever the pool is read, so there is no ticking
+task and offline time counts.
+
 ## GriefPrevention
 
 If the plugin is installed and `respect-claims: true`, no ability affects
@@ -258,8 +272,6 @@ console, and the abilities keep working without claim protection.
   staff's melee hit before the left click ability fires.
 - Leap decides whether you are airborne from the on-ground flag the client
   reports, the same one vanilla uses for fall distance.
-- Cooldowns live in memory and are dropped on quit, so relogging clears them.
-  That includes the Ice Armor cooldown started when the armor ends on quit.
 - Dragon breath is an area effect cloud, not a living entity or a projectile,
   so it passes through Ice Armor like environmental damage.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.
