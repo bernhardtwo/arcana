@@ -123,7 +123,7 @@ public final class ChainHookAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         UUID id = caster.getUniqueId();
         release(id, null);
 
@@ -138,6 +138,7 @@ public final class ChainHookAbility implements Ability {
         if (plugin.settings().effects()) {
             hook.world.playSound(eye, Sound.ENTITY_FISHING_BOBBER_THROW, 0.8f, 0.6f);
         }
+        return true;
     }
 
     /** The anchored hook of a player, or null while the claw is still flying or there is none. */

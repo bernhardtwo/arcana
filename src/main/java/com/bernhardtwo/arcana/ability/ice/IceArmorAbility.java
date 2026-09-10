@@ -86,7 +86,7 @@ public final class IceArmorAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         IceArmorSettings settings = settings();
         World world = caster.getWorld();
         Armor armor = new Armor();
@@ -103,6 +103,7 @@ public final class IceArmorAbility implements Ability {
             world.playSound(center, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.9f, 1.2f);
             world.spawnParticle(Particle.SNOWFLAKE, center, 24, 0.6, 0.5, 0.6, 0.02);
         }
+        return true;
     }
 
     /** Absorbs one attack. Returns false when the player has no armor up. */

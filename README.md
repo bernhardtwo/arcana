@@ -83,8 +83,8 @@ port 25566 for testing without touching production.
 All under the `arcana.admin` permission (op only by default).
 
 ```
-/arcana give <player> <staff>   hands out a staff
-/arcana list                    registered staffs, GriefPrevention and CoreProtect status
+/arcana give <player> <id> [amount]   hands out a staff or a mana potion
+/arcana list                          registered items and the GriefPrevention, CoreProtect and AuraSkills status
 /arcana reload                  re-reads config.yml without a restart
 /arcana reset [player]          clears every cooldown and refills every charge pool
 /arcana reset [player] <id>     clears only that ability, for example solar_zenith
@@ -96,7 +96,7 @@ removed, `Cleared 4 cooldowns and refilled 1 charge pool for vegabernh`, and
 never errors on a player who has none. It exists for balancing: without it
 the only way to skip a 15 minute cooldown is deleting the playerdata file.
 
-Registered staffs: `gravity`, `ice`, `solar`, `shadow` and `chain`.
+Registered items: the staffs `gravity`, `ice`, `solar`, `shadow` and `chain`, and `mana_potion`.
 
 ## Permissions
 
@@ -210,6 +210,12 @@ items:
   protect-from-crafting: true
   indestructible-when-dropped: true
 
+mana:
+  bar: true
+  potion:
+    restore: 20.0
+    recipe-enabled: false
+
 abilities:
   gravity_push:
     radius: 12.0
@@ -221,12 +227,26 @@ abilities:
       players: false
       mobs: true
     fall-grace-ticks: 120
+    mana-cost: 10.0
+
+  gravity_pull:
+    radius: 28.0
+    strength: 2.2
+    lift: 0.35
+    max-velocity: 3.5
+    cooldown-ticks: 140
+    cancel-fall-damage:
+      players: false
+      mobs: true
+    fall-grace-ticks: 120
+    mana-cost: 10.0
 
   gravity_leap:
     jump-power: 0.9
     forward-boost: 0.35
     cooldown-ticks: 20
     fall-grace-ticks: 100
+    mana-cost: 5.0
 
   ice_slash:
     range: 3.5
@@ -237,6 +257,7 @@ abilities:
     freeze-ticks: 60
     slow-duration-ticks: 40
     cooldown-ticks: 30
+    mana-cost: 6.0
 
   ice_breaker:
     range: 24.0
@@ -244,6 +265,7 @@ abilities:
     freeze-ticks: 100
     slow-duration-ticks: 60
     cooldown-ticks: 120
+    mana-cost: 12.0
 
   ice_armor:
     charges: 3
@@ -258,11 +280,13 @@ abilities:
       - ENDER_DRAGON
       - WITHER
       - GHAST
+    mana-cost: 20.0
 
   solar_lantern:
     duration-ticks: 24000
     cooldown-ticks: 12000
     orbit-radius: 0.9
+    mana-cost: 15.0
 
   solar_zenith:
     height: 6
@@ -281,14 +305,17 @@ abilities:
     marker-gradient-cycles: 2.0
     marker-gradient-speed: 0.02
     cooldown-ticks: 18000
+    mana-cost: 30.0
 
   solar_bloom:
     max-charges: 5
     charge-regen-minutes: 12
+    mana-cost: 4.0
 
   shadow_blink:
     range: 14.0
     cooldown-ticks: 60
+    mana-cost: 8.0
 
   shadow_swap:
     range: 20.0
@@ -300,18 +327,21 @@ abilities:
     failed-cooldown-ticks: 40
     cooldown-ticks: 200
     fall-grace-ticks: 100
+    mana-cost: 12.0
 
   shadow_body:
     duration-ticks: 100
     break-on-attack: true
     hide-armor: true
     cooldown-ticks: 700
+    mana-cost: 15.0
 
   chain_hook:
     range: 24.0
     travel-speed: 1.6
     hold-ticks: 200
     cooldown-ticks: 40
+    mana-cost: 0
 
   chain_reel:
     pull-self-speed: 1.2
@@ -319,6 +349,7 @@ abilities:
     max-velocity: 2.5
     fall-grace-ticks: 100
     cooldown-ticks: 60
+    mana-cost: 0
 
   chain_rend:
     entity-damage: 6.0
@@ -331,6 +362,7 @@ abilities:
       - END_PORTAL_FRAME
       - REINFORCED_DEEPSLATE
     cooldown-ticks: 100
+    mana-cost: 0
 ```
 
 Notes on decisions that are not obvious:
@@ -371,6 +403,9 @@ Notes on decisions that are not obvious:
   exceptions are the swap refusals that could be spammed to probe, a target
   inside a claim on cast and a fizzled channel, which cost
   `failed-cooldown-ticks`. `channel-min-speed-factor` is clamped to 0..1.
+- `mana-cost` is read from every ability block and clamped at 0. A missing
+  key means the default cost, not free; set it to `0` to make an ability
+  free. Costs are ignored entirely without AuraSkills.
 - `chain_hook.travel-speed` is blocks per tick; at the default the claw
   crosses its full `range` in 15 ticks. `hold-ticks` is how long the claw
   stays latched with nothing done to it. Reel and Rend have no range of
@@ -591,6 +626,54 @@ turning it off leaves items already on the ground protected until they are
 picked up and dropped again. Both flags default to true; a server that
 wants wands to be losable turns them off.
 
+## Mana
+
+Mana comes from [AuraSkills](https://aurelium.dev/auraskills), through its
+API, and the whole thing is **optional**: without AuraSkills the plugin
+behaves exactly as described everywhere else in this file, with no mana
+costs, no refusals, no bar and no errors. `/arcana list` says whether the
+bridge is active.
+
+Every ability has a `mana-cost` in its own config block. On cast the checks
+run in this order: permission, group lockout, cooldown, mana, and only then
+the ability. Not enough mana refuses with
+`Solar: Zenith needs 30 mana, you have 12` and starts no cooldown. The mana
+is spent when the ability actually executes, never when it refuses: a blink
+with no room, a reel with no hook, or bone meal on stone cost nothing.
+Dismissing a lantern or cancelling a swap channel is free too. Shadow: Swap
+pays at the start of the channel, since the channel is the cast and a
+fizzle already has its own penalty. The defaults are tuned against a pool of
+roughly 40 to 60. The Chainshot costs 0 **on purpose**, it is a tool and not
+magic, but the keys exist so another server can charge for it.
+
+**Mana bar.** A boss bar shown only while an Arcana wand is in either hand,
+hidden the moment the player switches away, with the current and maximum
+mana in the title. One task refreshes it every 10 ticks for every online
+player, and a hand change refreshes it on the spot. Never shown when the
+bridge is inactive; `mana.bar: false` turns it off for servers that already
+display mana elsewhere. It is removed on quit, world change and plugin
+disable.
+
+**Mana potions.** `/arcana give <player> mana_potion [amount]` hands out a
+real potion with a custom colour, so it drinks like one. Drinking restores
+`mana.potion.restore` mana, capped at the maximum, consumes one from the
+stack and leaves a glass bottle behind, like any potion. It refuses, and is
+not consumed, when the server has no mana or the mana is already full. The
+potion is tagged like a wand, so the item guard and the dropped item
+protection cover it with no extra work. There is an **optional recipe**,
+off by default so no server is surprised by a new recipe:
+`mana.potion.recipe-enabled: true` registers a shapeless recipe of one glass
+bottle, two lapis lazuli and one glowstone dust, and a reload adds or removes
+it to match. The recipe result carries the restore amount of the moment it
+was registered, which is why a reload re-registers it.
+
+Like the GriefPrevention and CoreProtect hooks, the bridge is done **by
+reflection**: `AuraSkillsApi.get().getUser(uuid)` and the `SkillsUser` mana
+methods, resolved at startup. If AuraSkills answers unexpectedly the bridge
+disables itself with one warning and every mana cost is ignored from then on.
+A player AuraSkills has not loaded yet is treated the same way for that
+cast: mana never blocks a cast it cannot see.
+
 ## Cooldowns and charges
 
 Cooldowns are stored in the player's `PersistentDataContainer`, which is part
@@ -684,6 +767,9 @@ The structure is already laid out for more than one ability:
   through `PlayerStore`, the same container the cooldowns live in.
 - Items are identified by `PersistentDataContainer`, never by name or lore, so
   renaming a stick in an anvil forges nothing.
+- `Ability#cast` returns whether the ability actually executed. False means
+  it refused, dismissed or cancelled, and the caller then starts no cooldown
+  and spends no mana. Any new refusal path should return false.
 
 The same applies to bosses: a boss is a vanilla mob with changed attributes and
 a `BukkitRunnable` that decides which ability to cast based on its health, and

@@ -92,7 +92,7 @@ public final class SolarZenithAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         SolarZenithSettings settings = settings();
         Sun sun = new Sun();
         sun.groundY = caster.getLocation().getBlockY();
@@ -113,6 +113,7 @@ public final class SolarZenithAbility implements Ability {
             world.playSound(sun.center, Sound.ENTITY_EVOKER_PREPARE_SUMMON, 1.0f, 1.4f);
             world.spawnParticle(Particle.END_ROD, sun.center, 60, 1.2, 1.2, 1.2, 0.05);
         }
+        return true;
     }
 
     /** Runs every tick; the effects and the ring follow their own intervals. */

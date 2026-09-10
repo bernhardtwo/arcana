@@ -52,7 +52,7 @@ public final class IceBreakerAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         IceBreakerSettings settings = plugin.settings().iceBreaker();
         World world = caster.getWorld();
         Location eye = caster.getEyeLocation();
@@ -72,6 +72,7 @@ public final class IceBreakerAbility implements Ability {
             world.playSound(eye, Sound.BLOCK_AMETHYST_CLUSTER_BREAK, 0.9f, 1.3f);
             animate(world, eye.toVector(), direction, impact);
         }
+        return true;
     }
 
     private void animate(World world, Vector start, Vector direction, Vector impact) {

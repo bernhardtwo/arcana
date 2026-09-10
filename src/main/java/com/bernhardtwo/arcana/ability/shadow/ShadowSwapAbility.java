@@ -85,28 +85,28 @@ public final class ShadowSwapAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         UUID id = caster.getUniqueId();
         if (active.containsKey(id)) {
             cancel(id, "Shadow: Swap cancelled.");
-            return;
+            return false;
         }
         ShadowSwapSettings settings = settings();
         if (caster.isInsideVehicle() || !caster.getPassengers().isEmpty()) {
             caster.sendActionBar(warn("Shadow: Swap: dismount first"));
-            return;
+            return false;
         }
         Location eye = caster.getEyeLocation();
         RayTraceResult hit = caster.getWorld().rayTraceEntities(eye, eye.getDirection().normalize(), settings.range(),
                 RAY_SIZE, candidate -> isCandidate(caster, candidate, settings.allowPlayers()));
         if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
             caster.sendActionBar(warn("Shadow: Swap: nothing to swap with"));
-            return;
+            return false;
         }
         if (plugin.claims().isBlocked(caster, target.getLocation())) {
             caster.sendActionBar(warn("Shadow: Swap: " + target.getName() + " is inside a claim you cannot build in"));
             plugin.store().startCooldownWithIndicator(caster, id(), settings.failedCooldownTicks());
-            return;
+            return false;
         }
 
         Channel channel = new Channel();
@@ -122,6 +122,7 @@ public final class ShadowSwapAbility implements Ability {
         if (plugin.settings().effects()) {
             caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.4f, 1.4f);
         }
+        return true;
     }
 
     public boolean isChanneling(UUID player) {

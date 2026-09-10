@@ -19,6 +19,26 @@ public final class AbilityItems {
     private AbilityItems() {
     }
 
+    /** Every id the give command accepts: the wands and the potion. */
+    public static List<String> ids(ArcanaPlugin plugin) {
+        List<String> ids = new ArrayList<>();
+        plugin.wands().all().forEach(wand -> ids.add(wand.id()));
+        ids.add(ManaPotion.ID);
+        return ids;
+    }
+
+    /** Any registered Arcana item by id, or empty for an unknown id. */
+    public static Optional<ItemStack> create(ArcanaPlugin plugin, String id, int amount) {
+        if (ManaPotion.ID.equals(id)) {
+            return Optional.of(ManaPotion.create(plugin, amount));
+        }
+        return plugin.wands().find(id).map(wand -> {
+            ItemStack stack = create(plugin, wand);
+            stack.setAmount(amount);
+            return stack;
+        });
+    }
+
     public static ItemStack create(ArcanaPlugin plugin, Wand wand) {
         ItemStack stack = new ItemStack(wand.material());
         ItemMeta meta = stack.getItemMeta();

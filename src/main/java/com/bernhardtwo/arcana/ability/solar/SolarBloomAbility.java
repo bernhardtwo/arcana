@@ -42,29 +42,29 @@ public final class SolarBloomAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
-        cast(caster, null);
+    public boolean cast(Player caster) {
+        return cast(caster, null);
     }
 
     @Override
-    public void cast(Player caster, Block clicked) {
+    public boolean cast(Player caster, Block clicked) {
         if (clicked == null) {
-            return;
+            return false;
         }
         SolarBloomSettings settings = settings();
         PlayerStore store = plugin.store();
         PlayerStore.Charges charges = store.charges(caster, id(), settings.maxCharges(), settings.regenMillis());
         if (charges.count() <= 0) {
             caster.sendActionBar(status(charges));
-            return;
+            return false;
         }
         if (plugin.claims().isBlocked(caster, clicked.getLocation())) {
             caster.sendActionBar(Component.text("Solar: Bloom: you cannot build here", NamedTextColor.GRAY));
-            return;
+            return false;
         }
         if (!clicked.applyBoneMeal(BlockFace.UP)) {
             caster.sendActionBar(Component.text("Solar: Bloom: nothing to grow there", NamedTextColor.GRAY));
-            return;
+            return false;
         }
         store.consumeCharge(caster, id(), settings.maxCharges(), settings.regenMillis());
         caster.sendActionBar(status(store.charges(caster, id(), settings.maxCharges(), settings.regenMillis())));
@@ -74,6 +74,7 @@ public final class SolarBloomAbility implements Ability {
                     15, 0.5, 0.5, 0.5, 0.0);
             clicked.getWorld().playSound(clicked.getLocation(), Sound.ITEM_BONE_MEAL_USE, 1.0f, 1.1f);
         }
+        return true;
     }
 
     private Component status(PlayerStore.Charges charges) {

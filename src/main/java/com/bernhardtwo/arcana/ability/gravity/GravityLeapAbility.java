@@ -51,7 +51,7 @@ public final class GravityLeapAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         LeapSettings settings = plugin.settings().leap();
         spent.add(caster.getUniqueId());
 
@@ -74,6 +74,7 @@ public final class GravityLeapAbility implements Ability {
             world.spawnParticle(Particle.CLOUD, feet, 12, 0.3, 0.05, 0.3, 0.02);
             world.playSound(feet, Sound.ENTITY_BREEZE_JUMP, 0.8f, 1.2f);
         }
+        return true;
     }
 
     // Sampled every 5 ticks, so a landing shorter than that can be missed; PlayerMoveEvent would close that gap.

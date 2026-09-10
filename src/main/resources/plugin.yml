@@ -8,6 +8,7 @@ website: https://github.com/bernhardtwo/arcana
 softdepend:
   - GriefPrevention
   - CoreProtect
+  - AuraSkills
 commands:
   arcana:
     description: Manages the ability staffs.

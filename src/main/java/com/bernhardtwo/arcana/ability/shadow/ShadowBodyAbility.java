@@ -67,7 +67,7 @@ public final class ShadowBodyAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         ShadowBodySettings settings = settings();
         UUID id = caster.getUniqueId();
         BukkitTask previous = active.remove(id);
@@ -90,6 +90,7 @@ public final class ShadowBodyAbility implements Ability {
                     25, 0.3, 0.6, 0.3, 0.02);
             caster.getWorld().playSound(caster.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 0.8f, 0.7f);
         }
+        return true;
     }
 
     public boolean isActive(UUID player) {

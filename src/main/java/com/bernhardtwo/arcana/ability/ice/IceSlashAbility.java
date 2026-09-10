@@ -48,7 +48,7 @@ public final class IceSlashAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         IceSlashSettings settings = plugin.settings().iceSlash();
         Location origin = caster.getLocation();
         Vector look = origin.getDirection().setY(0.0);
@@ -81,6 +81,7 @@ public final class IceSlashAbility implements Ability {
         if (plugin.settings().effects() && hasLook) {
             playEffects(caster, look, settings.arcDegrees());
         }
+        return true;
     }
 
     private void playEffects(Player caster, Vector look, double arcDegrees) {

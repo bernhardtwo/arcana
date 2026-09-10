@@ -15,6 +15,12 @@ items:
   protect-from-crafting: true
   indestructible-when-dropped: true
 
+mana:
+  bar: true
+  potion:
+    restore: 20.0
+    recipe-enabled: false
+
 abilities:
   gravity_push:
     radius: 12.0
@@ -26,6 +32,7 @@ abilities:
       players: false
       mobs: true
     fall-grace-ticks: 120
+    mana-cost: 10.0
 
   gravity_pull:
     radius: 28.0
@@ -37,12 +44,14 @@ abilities:
       players: false
       mobs: true
     fall-grace-ticks: 120
+    mana-cost: 10.0
 
   gravity_leap:
     jump-power: 0.9
     forward-boost: 0.35
     cooldown-ticks: 20
     fall-grace-ticks: 100
+    mana-cost: 5.0
 
   ice_slash:
     range: 3.5
@@ -53,6 +62,7 @@ abilities:
     freeze-ticks: 60
     slow-duration-ticks: 40
     cooldown-ticks: 30
+    mana-cost: 6.0
 
   ice_breaker:
     range: 24.0
@@ -60,6 +70,7 @@ abilities:
     freeze-ticks: 100
     slow-duration-ticks: 60
     cooldown-ticks: 120
+    mana-cost: 12.0
 
   ice_armor:
     charges: 3
@@ -74,11 +85,13 @@ abilities:
       - ENDER_DRAGON
       - WITHER
       - GHAST
+    mana-cost: 20.0
 
   solar_lantern:
     duration-ticks: 24000
     cooldown-ticks: 12000
     orbit-radius: 0.9
+    mana-cost: 15.0
 
   solar_zenith:
     height: 6
@@ -97,14 +110,17 @@ abilities:
     marker-gradient-cycles: 2.0
     marker-gradient-speed: 0.02
     cooldown-ticks: 18000
+    mana-cost: 30.0
 
   solar_bloom:
     max-charges: 5
     charge-regen-minutes: 12
+    mana-cost: 4.0
 
   shadow_blink:
     range: 14.0
     cooldown-ticks: 60
+    mana-cost: 8.0
 
   shadow_swap:
     range: 20.0
@@ -116,18 +132,21 @@ abilities:
     failed-cooldown-ticks: 40
     cooldown-ticks: 200
     fall-grace-ticks: 100
+    mana-cost: 12.0
 
   shadow_body:
     duration-ticks: 100
     break-on-attack: true
     hide-armor: true
     cooldown-ticks: 700
+    mana-cost: 15.0
 
   chain_hook:
     range: 24.0
     travel-speed: 1.6
     hold-ticks: 200
     cooldown-ticks: 40
+    mana-cost: 0
 
   chain_reel:
     pull-self-speed: 1.2
@@ -135,6 +154,7 @@ abilities:
     max-velocity: 2.5
     fall-grace-ticks: 100
     cooldown-ticks: 60
+    mana-cost: 0
 
   chain_rend:
     entity-damage: 6.0
@@ -147,3 +167,4 @@ abilities:
       - END_PORTAL_FRAME
       - REINFORCED_DEEPSLATE
     cooldown-ticks: 100
+    mana-cost: 0

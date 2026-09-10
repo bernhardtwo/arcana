@@ -6,6 +6,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public final class ArcanaConfig {
@@ -30,6 +32,14 @@ public final class ArcanaConfig {
     private static final ShadowBlinkSettings BLINK_DEFAULTS = new ShadowBlinkSettings(14.0, 60);
     private static final ShadowSwapSettings SWAP_DEFAULTS = new ShadowSwapSettings(20.0, true, 60, 0.15, true, true, 40, 200, 100);
     private static final ShadowBodySettings BODY_DEFAULTS = new ShadowBodySettings(100, true, true, 700);
+    private static final ManaSettings MANA_DEFAULTS = new ManaSettings(true, 20.0, false);
+    /** Tuned against a pool of 40 to 60. The chain is free on purpose: a tool, not magic. */
+    private static final Map<String, Double> MANA_COST_DEFAULTS = Map.ofEntries(
+            Map.entry("gravity_push", 10.0), Map.entry("gravity_pull", 10.0), Map.entry("gravity_leap", 5.0),
+            Map.entry("ice_slash", 6.0), Map.entry("ice_breaker", 12.0), Map.entry("ice_armor", 20.0),
+            Map.entry("solar_lantern", 15.0), Map.entry("solar_zenith", 30.0), Map.entry("solar_bloom", 4.0),
+            Map.entry("shadow_blink", 8.0), Map.entry("shadow_swap", 12.0), Map.entry("shadow_body", 15.0),
+            Map.entry("chain_hook", 0.0), Map.entry("chain_reel", 0.0), Map.entry("chain_rend", 0.0));
     private static final ChainHookSettings HOOK_DEFAULTS = new ChainHookSettings(24.0, 1.6, 200, 40);
     private static final ChainReelSettings REEL_DEFAULTS = new ChainReelSettings(1.2, 1.1, 2.5, 100, 60);
     private static final ChainRendSettings REND_DEFAULTS = new ChainRendSettings(6.0, 0.5, 5.0,
@@ -39,6 +49,8 @@ public final class ArcanaConfig {
     private final boolean effects;
     private final TargetRules targets;
     private final ItemSettings items;
+    private final ManaSettings mana;
+    private final Map<String, Double> manaCosts;
     private final GravitySettings push;
     private final GravitySettings pull;
     private final LeapSettings leap;
@@ -55,7 +67,8 @@ public final class ArcanaConfig {
     private final ChainReelSettings chainReel;
     private final ChainRendSettings chainRend;
 
-    private ArcanaConfig(boolean effects, TargetRules targets, ItemSettings items, GravitySettings push, GravitySettings pull,
+    private ArcanaConfig(boolean effects, TargetRules targets, ItemSettings items, ManaSettings mana,
+                         Map<String, Double> manaCosts, GravitySettings push, GravitySettings pull,
                          LeapSettings leap, IceSlashSettings iceSlash, IceBreakerSettings iceBreaker,
                          IceArmorSettings iceArmor, SolarLanternSettings solarLantern,
                          SolarZenithSettings solarZenith, SolarBloomSettings solarBloom,
@@ -65,6 +78,8 @@ public final class ArcanaConfig {
         this.effects = effects;
         this.targets = targets;
         this.items = items;
+        this.mana = mana;
+        this.manaCosts = manaCosts;
         this.push = push;
         this.pull = pull;
         this.leap = leap;
@@ -83,10 +98,15 @@ public final class ArcanaConfig {
     }
 
     public static ArcanaConfig load(FileConfiguration config, Logger logger) {
+        Map<String, Double> manaCosts = new HashMap<>();
+        MANA_COST_DEFAULTS.forEach((id, cost) ->
+                manaCosts.put(id, Math.max(0.0, config.getDouble("abilities." + id + ".mana-cost", cost))));
         return new ArcanaConfig(
                 config.getBoolean("effects", true),
                 TargetRules.from(config.getConfigurationSection("targets")),
                 ItemSettings.from(config.getConfigurationSection("items")),
+                ManaSettings.from(config.getConfigurationSection("mana"), MANA_DEFAULTS),
+                manaCosts,
                 GravitySettings.from(config.getConfigurationSection("abilities.gravity_push"), PUSH_DEFAULTS),
                 GravitySettings.from(config.getConfigurationSection("abilities.gravity_pull"), PULL_DEFAULTS),
                 LeapSettings.from(config.getConfigurationSection("abilities.gravity_leap"), LEAP_DEFAULTS),
@@ -115,6 +135,15 @@ public final class ArcanaConfig {
 
     public ItemSettings items() {
         return items;
+    }
+
+    public ManaSettings mana() {
+        return mana;
+    }
+
+    /** Mana an ability costs to cast; 0 for an ability with no configured cost. */
+    public double manaCost(String abilityId) {
+        return manaCosts.getOrDefault(abilityId, 0.0);
     }
 
     public GravitySettings push() {

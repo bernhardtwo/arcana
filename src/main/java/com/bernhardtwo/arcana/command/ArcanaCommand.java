@@ -3,9 +3,11 @@ package com.bernhardtwo.arcana.command;
 import com.bernhardtwo.arcana.ArcanaPlugin;
 import com.bernhardtwo.arcana.ability.PlayerStore;
 import com.bernhardtwo.arcana.item.AbilityItems;
+import com.bernhardtwo.arcana.item.ManaPotion;
 import com.bernhardtwo.arcana.item.Wand;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -47,9 +49,10 @@ public final class ArcanaCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    /** /arcana give <player> <id> [amount]: any registered Arcana item, wands and potions alike. */
     private void give(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            sender.sendMessage(warn("Usage: /arcana give <player> <staff>"));
+            sender.sendMessage(warn("Usage: /arcana give <player> <id> [amount]"));
             return;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
@@ -57,18 +60,29 @@ public final class ArcanaCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(warn("No online player with that name."));
             return;
         }
-        Optional<Wand> wand = plugin.wands().find(args[2].toLowerCase(Locale.ROOT));
-        if (wand.isEmpty()) {
-            sender.sendMessage(warn("Unknown staff. Use /arcana list."));
+        int amount = 1;
+        if (args.length >= 4) {
+            try {
+                amount = Math.min(64, Math.max(1, Integer.parseInt(args[3])));
+            } catch (NumberFormatException ex) {
+                sender.sendMessage(warn("Amount must be a number."));
+                return;
+            }
+        }
+        Optional<ItemStack> item = AbilityItems.create(plugin, args[2].toLowerCase(Locale.ROOT), amount);
+        if (item.isEmpty()) {
+            sender.sendMessage(warn("Unknown item. Use /arcana list."));
             return;
         }
 
-        ItemStack stack = AbilityItems.create(plugin, wand.get());
+        ItemStack stack = item.get();
+        String name = PlainTextComponentSerializer.plainText().serialize(stack.getItemMeta().displayName());
+        String what = amount == 1 ? name : amount + " x " + name;
         target.getInventory().addItem(stack).values()
                 .forEach(leftover -> target.getWorld().dropItemNaturally(target.getLocation(), leftover));
 
-        sender.sendMessage(info("Gave " + wand.get().displayName() + " to " + target.getName() + "."));
-        target.sendMessage(info("You received " + wand.get().displayName() + "."));
+        sender.sendMessage(info("Gave " + what + " to " + target.getName() + "."));
+        target.sendMessage(info("You received " + what + "."));
     }
 
     /** /arcana reset [player] [ability]: clears cooldowns and refills charge pools. Only online players have a container. */
@@ -131,12 +145,14 @@ public final class ArcanaCommand implements CommandExecutor, TabCompleter {
         for (Wand wand : plugin.wands().all()) {
             sender.sendMessage(Component.text("  " + wand.id() + " - " + wand.displayName(), NamedTextColor.GRAY));
         }
+        sender.sendMessage(Component.text("  " + ManaPotion.ID + " - Mana Potion", NamedTextColor.GRAY));
         sender.sendMessage(info("GriefPrevention claims: " + (plugin.claims().isActive() ? "active" : "not detected")));
         sender.sendMessage(info("CoreProtect logging: " + (plugin.coreProtect().isActive() ? "active" : "not detected")));
+        sender.sendMessage(info("AuraSkills mana: " + (plugin.mana().isActive() ? "active" : "not detected")));
     }
 
     private void sendUsage(CommandSender sender, String label) {
-        sender.sendMessage(warn("/" + label + " give <player> <staff>"));
+        sender.sendMessage(warn("/" + label + " give <player> <id> [amount]"));
         sender.sendMessage(warn("/" + label + " list"));
         sender.sendMessage(warn("/" + label + " reset [player] [ability]"));
         sender.sendMessage(warn("/" + label + " reload"));
@@ -150,7 +166,7 @@ public final class ArcanaCommand implements CommandExecutor, TabCompleter {
         } else if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             Bukkit.getOnlinePlayers().forEach(player -> options.add(player.getName()));
         } else if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
-            plugin.wands().all().forEach(wand -> options.add(wand.id()));
+            options.addAll(AbilityItems.ids(plugin));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("reset")) {
             Bukkit.getOnlinePlayers().forEach(player -> options.add(player.getName()));
             options.addAll(allAbilityIds());

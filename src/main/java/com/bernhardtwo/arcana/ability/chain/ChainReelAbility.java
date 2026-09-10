@@ -61,15 +61,15 @@ public final class ChainReelAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         ChainHookAbility.Hook hook = hooks.anchored(caster.getUniqueId());
         if (hook == null) {
             caster.sendActionBar(warn("Chain: Reel: no hook anchored"));
-            return;
+            return false;
         }
         if (hook.isReeling()) {
             caster.sendActionBar(warn("Chain: Reel: already reeling"));
-            return;
+            return false;
         }
         ChainReelSettings settings = settings();
         plugin.store().startCooldownWithIndicator(caster, id(), settings.cooldownTicks());
@@ -81,6 +81,7 @@ public final class ChainReelAbility implements Ability {
         } else {
             pullSelf(caster, hook, settings);
         }
+        return true;
     }
 
     private void pullEntity(Player caster, LivingEntity target, ChainReelSettings settings) {

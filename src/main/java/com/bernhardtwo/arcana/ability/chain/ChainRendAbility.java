@@ -64,24 +64,25 @@ public final class ChainRendAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         ChainHookAbility.Hook hook = hooks.anchored(caster.getUniqueId());
         if (hook == null) {
             caster.sendActionBar(warn("Chain: Rend: no hook anchored"));
-            return;
+            return false;
         }
         ChainRendSettings settings = settings();
         if (hook.entity() != null) {
             rendEntity(caster, hook.entity(), settings);
-            return;
+            return false;
         }
         Block block = hook.block();
         String refusal = refusal(caster, block, settings);
         if (refusal != null) {
             caster.sendActionBar(warn("Chain: Rend: " + refusal));
-            return;
+            return false;
         }
         rendBlock(caster, block, settings);
+        return true;
     }
 
     private void rendEntity(Player caster, LivingEntity target, ChainRendSettings settings) {

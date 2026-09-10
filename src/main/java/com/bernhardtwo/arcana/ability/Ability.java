@@ -11,11 +11,16 @@ public interface Ability {
 
     int cooldownTicks();
 
-    void cast(Player caster);
+    /**
+     * Runs the ability. False means it refused and nothing happened, so the
+     * caller starts no cooldown and spends no mana. A dismiss or a cancel of a
+     * running instance is also false: ending something costs no mana.
+     */
+    boolean cast(Player caster);
 
     /** Cast with the block the player clicked, or null for a click in the air or on an entity. */
-    default void cast(Player caster, Block clicked) {
-        cast(caster);
+    default boolean cast(Player caster, Block clicked) {
+        return cast(caster);
     }
 
     /** Short note appended to the wand lore, such as "toggle". Null for none. */

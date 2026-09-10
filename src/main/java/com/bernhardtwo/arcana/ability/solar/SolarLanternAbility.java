@@ -83,12 +83,12 @@ public final class SolarLanternAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         if (active.containsKey(caster.getUniqueId())) {
             int cooldown = end(caster.getUniqueId(), null);
             caster.sendActionBar(Component.text("Solar: Lantern dismissed, cooldown " + format(cooldown),
                     NamedTextColor.GOLD));
-            return;
+            return false;
         }
 
         SolarLanternSettings settings = settings();
@@ -106,6 +106,7 @@ public final class SolarLanternAbility implements Ability {
             caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.7f, 1.6f);
             caster.getWorld().spawnParticle(Particle.END_ROD, caster.getEyeLocation(), 12, 0.4, 0.3, 0.4, 0.02);
         }
+        return true;
     }
 
     /** Runs every tick: orbits the orb, warns once near the end and expires finished lanterns. */

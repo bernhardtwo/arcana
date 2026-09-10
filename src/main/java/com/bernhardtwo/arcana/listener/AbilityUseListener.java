@@ -111,6 +111,7 @@ public final class AbilityUseListener implements Listener {
             return;
         }
 
+        double cost = plugin.settings().manaCost(selected.id());
         // A recast replaces the running instance; the ability charges for the old one itself.
         if (!selected.replacesActiveCast(player)) {
             Component lockout = lockoutMessage(player, selected);
@@ -123,16 +124,28 @@ public final class AbilityUseListener implements Listener {
                 player.sendActionBar(warn(selected.displayName() + " ready in " + format(remaining)));
                 return;
             }
+            // Mana last, and only when the bridge can see it. A refusal here costs nothing.
+            if (!plugin.mana().hasMana(player, cost)) {
+                player.sendActionBar(warn(String.format("%s needs %.0f mana, you have %.0f",
+                        selected.displayName(), cost, plugin.mana().mana(player))));
+                return;
+            }
         }
 
         // Sent before the cast so an ability can overwrite it with something more useful in the same tick.
         player.sendActionBar(Component.text(selected.displayName(), NamedTextColor.LIGHT_PURPLE));
+        boolean executed;
         casting = true;
         try {
-            selected.cast(player, clicked);
+            executed = selected.cast(player, clicked);
         } finally {
             casting = false;
         }
+        if (!executed) {
+            return;
+        }
+        // Spent when the ability actually ran: a channel counts from its start, a refusal or a dismiss never.
+        plugin.mana().consume(player, cost);
         if (selected.startsCooldownOnCast()) {
             plugin.store().startCooldownWithIndicator(player, selected.id(), selected.cooldownTicks());
         }

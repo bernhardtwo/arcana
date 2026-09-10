@@ -58,7 +58,7 @@ public final class ShadowBlinkAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         ShadowBlinkSettings settings = plugin.settings().shadowBlink();
         World world = caster.getWorld();
         Location eye = caster.getEyeLocation();
@@ -78,7 +78,7 @@ public final class ShadowBlinkAbility implements Ability {
         }
         if (destination == null) {
             caster.sendActionBar(Component.text("Shadow: Blink: no room to blink there", NamedTextColor.GRAY));
-            return;
+            return false;
         }
 
         caster.teleport(destination, PlayerTeleportEvent.TeleportCause.PLUGIN);
@@ -88,6 +88,7 @@ public final class ShadowBlinkAbility implements Ability {
             puff(world, origin);
             puff(world, destination);
         }
+        return true;
     }
 
     /** A standing player box (0.6 wide, 1.8 tall) at these feet touches no block, hard entity or border, and is above the void. */

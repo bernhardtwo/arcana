@@ -23,6 +23,8 @@ import com.bernhardtwo.arcana.command.ArcanaCommand;
 import com.bernhardtwo.arcana.config.ArcanaConfig;
 import com.bernhardtwo.arcana.integration.ClaimGuard;
 import com.bernhardtwo.arcana.integration.CoreProtectLog;
+import com.bernhardtwo.arcana.integration.ManaBridge;
+import com.bernhardtwo.arcana.item.ManaPotion;
 import com.bernhardtwo.arcana.item.Wand;
 import com.bernhardtwo.arcana.item.WandRegistry;
 import com.bernhardtwo.arcana.listener.AbilityUseListener;
@@ -32,6 +34,8 @@ import com.bernhardtwo.arcana.listener.FallDamageListener;
 import com.bernhardtwo.arcana.listener.IceArmorListener;
 import com.bernhardtwo.arcana.listener.IceListener;
 import com.bernhardtwo.arcana.listener.ItemGuardListener;
+import com.bernhardtwo.arcana.listener.ManaListener;
+import com.bernhardtwo.arcana.mana.ManaBar;
 import com.bernhardtwo.arcana.listener.ShadowListener;
 import com.bernhardtwo.arcana.listener.SolarListener;
 import org.bukkit.Material;
@@ -47,6 +51,7 @@ public final class ArcanaPlugin extends JavaPlugin {
     private NamespacedKey wandKey;
     private NamespacedKey iceSnowballKey;
     private NamespacedKey displayKey;
+    private NamespacedKey itemKey;
     private ArcanaConfig settings;
     private AbilityRegistry abilities;
     private WandRegistry wands;
@@ -54,6 +59,8 @@ public final class ArcanaPlugin extends JavaPlugin {
     private FallGrace fallGrace;
     private ClaimGuard claims;
     private CoreProtectLog coreProtect;
+    private ManaBridge mana;
+    private ManaBar manaBar;
     private Frost frost;
     private IceArmorAbility iceArmor;
     private SolarLanternAbility solarLantern;
@@ -68,12 +75,15 @@ public final class ArcanaPlugin extends JavaPlugin {
         wandKey = new NamespacedKey(this, "wand");
         iceSnowballKey = new NamespacedKey(this, "ice_snowball");
         displayKey = new NamespacedKey(this, "display");
+        itemKey = new NamespacedKey(this, "item");
         settings = ArcanaConfig.load(getConfig(), getLogger());
         sweepOrphanedDisplays();
         store = new PlayerStore(this);
         fallGrace = new FallGrace();
         claims = new ClaimGuard(this);
         coreProtect = new CoreProtectLog(this);
+        mana = new ManaBridge(this);
+        manaBar = new ManaBar(this);
         frost = new Frost();
 
         abilities = new AbilityRegistry();
@@ -116,6 +126,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
         getServer().getPluginManager().registerEvents(new ItemGuardListener(this), this);
         getServer().getPluginManager().registerEvents(new DroppedItemListener(this), this);
+        getServer().getPluginManager().registerEvents(new ManaListener(this), this);
         getServer().getPluginManager().registerEvents(new FallDamageListener(this), this);
         getServer().getPluginManager().registerEvents(new IceListener(this), this);
         getServer().getPluginManager().registerEvents(new IceArmorListener(iceArmor), this);
@@ -136,6 +147,8 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, solarLantern::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, solarZenith::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, chainHook::tick, 1L, 1L);
+        getServer().getScheduler().runTaskTimer(this, manaBar::tick, 10L, 10L);
+        ManaPotion.syncRecipe(this);
         getLogger().info("Arcana enabled with " + abilities.all().size() + " abilities.");
     }
 
@@ -159,11 +172,15 @@ public final class ArcanaPlugin extends JavaPlugin {
         if (chainHook != null) {
             chainHook.endAll();
         }
+        if (manaBar != null) {
+            manaBar.hideAll();
+        }
     }
 
     public void reloadSettings() {
         reloadConfig();
         settings = ArcanaConfig.load(getConfig(), getLogger());
+        ManaPotion.syncRecipe(this);
     }
 
     /** Defensive insurance: our displays are non-persistent, but sweep loaded worlds anyway. */
@@ -192,6 +209,11 @@ public final class ArcanaPlugin extends JavaPlugin {
 
     public NamespacedKey displayKey() {
         return displayKey;
+    }
+
+    /** Tags Arcana items that are not wands, such as the mana potion. */
+    public NamespacedKey itemKey() {
+        return itemKey;
     }
 
     public Frost frost() {
@@ -224,5 +246,13 @@ public final class ArcanaPlugin extends JavaPlugin {
 
     public CoreProtectLog coreProtect() {
         return coreProtect;
+    }
+
+    public ManaBridge mana() {
+        return mana;
+    }
+
+    public ManaBar manaBar() {
+        return manaBar;
     }
 }

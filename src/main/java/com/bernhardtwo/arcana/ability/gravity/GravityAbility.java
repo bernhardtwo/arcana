@@ -50,7 +50,7 @@ public final class GravityAbility implements Ability {
     }
 
     @Override
-    public void cast(Player caster) {
+    public boolean cast(Player caster) {
         GravitySettings settings = settings();
         TargetRules rules = plugin.settings().targets();
         Location center = caster.getLocation();
@@ -82,6 +82,7 @@ public final class GravityAbility implements Ability {
         if (plugin.settings().effects()) {
             playEffects(caster, settings);
         }
+        return true;
     }
 
     private void applyImpulse(Entity entity, Vector offset, double distance, double radius, GravitySettings settings) {
