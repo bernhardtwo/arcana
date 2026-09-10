@@ -51,6 +51,7 @@ public final class ArcanaPlugin extends JavaPlugin {
     private SolarLanternAbility solarLantern;
     private SolarZenithAbility solarZenith;
     private ShadowBodyAbility shadowBody;
+    private ShadowSwapAbility shadowSwap;
 
     @Override
     public void onEnable() {
@@ -80,7 +81,8 @@ public final class ArcanaPlugin extends JavaPlugin {
         abilities.register(solarZenith);
         abilities.register(new SolarBloomAbility(this));
         abilities.register(new ShadowBlinkAbility(this));
-        abilities.register(new ShadowSwapAbility(this));
+        shadowSwap = new ShadowSwapAbility(this);
+        abilities.register(shadowSwap);
         shadowBody = new ShadowBodyAbility(this);
         abilities.register(shadowBody);
         solarZenith.removeOrphanLights();
@@ -100,7 +102,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new IceListener(this), this);
         getServer().getPluginManager().registerEvents(new IceArmorListener(iceArmor), this);
         getServer().getPluginManager().registerEvents(new SolarListener(solarLantern, solarZenith), this);
-        getServer().getPluginManager().registerEvents(new ShadowListener(this, shadowBody), this);
+        getServer().getPluginManager().registerEvents(new ShadowListener(this, shadowBody, shadowSwap), this);
 
         PluginCommand command = getCommand("arcana");
         if (command != null) {
@@ -130,6 +132,9 @@ public final class ArcanaPlugin extends JavaPlugin {
         }
         if (shadowBody != null) {
             shadowBody.endAll();
+        }
+        if (shadowSwap != null) {
+            shadowSwap.cancelAll();
         }
     }
 

@@ -134,11 +134,7 @@ public final class AbilityUseListener implements Listener {
             casting = false;
         }
         if (selected.startsCooldownOnCast()) {
-            plugin.store().startCooldown(player, selected.id(), selected.cooldownTicks());
-            // The vanilla indicator is per material, so a short cooldown must not overwrite a longer one still running.
-            if (held != null && player.getCooldown(held.getType()) < selected.cooldownTicks()) {
-                player.setCooldown(held.getType(), selected.cooldownTicks());
-            }
+            plugin.store().startCooldownWithIndicator(player, selected.id(), selected.cooldownTicks());
         }
     }
 

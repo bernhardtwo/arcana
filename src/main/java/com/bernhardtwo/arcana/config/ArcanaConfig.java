@@ -26,8 +26,8 @@ public final class ArcanaConfig {
     private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 12.0, 5, 32, 1.6f,
             Color.fromRGB(0xFFFFFF), Color.fromRGB(0xFF6A00), true, 2.0, 0.02, 18000);
     private static final SolarBloomSettings BLOOM_DEFAULTS = new SolarBloomSettings(5, 12);
-    private static final ShadowBlinkSettings BLINK_DEFAULTS = new ShadowBlinkSettings(14.0, 60, 100);
-    private static final ShadowSwapSettings SWAP_DEFAULTS = new ShadowSwapSettings(20.0, true, 200, 100);
+    private static final ShadowBlinkSettings BLINK_DEFAULTS = new ShadowBlinkSettings(14.0, 60);
+    private static final ShadowSwapSettings SWAP_DEFAULTS = new ShadowSwapSettings(20.0, true, 60, 0.15, true, true, 40, 200, 100);
     private static final ShadowBodySettings BODY_DEFAULTS = new ShadowBodySettings(100, true, true, 700);
 
     private final boolean effects;

@@ -101,11 +101,15 @@ abilities:
   shadow_blink:
     range: 14.0
     cooldown-ticks: 60
-    fall-grace-ticks: 100
 
   shadow_swap:
     range: 20.0
     allow-players: true
+    channel-ticks: 60
+    channel-min-speed-factor: 0.15
+    cancel-on-damage: true
+    warn-target: true
+    failed-cooldown-ticks: 40
     cooldown-ticks: 200
     fall-grace-ticks: 100
 

@@ -1,6 +1,7 @@
 package com.bernhardtwo.arcana.ability;
 
 import org.bukkit.NamespacedKey;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -32,6 +33,21 @@ public final class PlayerStore {
     public void startCooldown(Player player, String abilityId, int ticks) {
         player.getPersistentDataContainer()
                 .set(cooldownKey(abilityId), PersistentDataType.LONG, System.currentTimeMillis() + ticks * 50L);
+    }
+
+    /**
+     * Cooldown plus the vanilla indicator on the item in hand. The indicator is
+     * per material, so a short cooldown never overwrites a longer one still running.
+     */
+    public void startCooldownWithIndicator(Player player, String abilityId, int ticks) {
+        if (ticks <= 0) {
+            return;
+        }
+        startCooldown(player, abilityId, ticks);
+        Material held = player.getInventory().getItemInMainHand().getType();
+        if (player.getCooldown(held) < ticks) {
+            player.setCooldown(held, ticks);
+        }
     }
 
     // ----- charge pools -----

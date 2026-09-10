@@ -34,7 +34,7 @@ Four staffs so far.
 | Ability | How to cast | What it does |
 |---|---|---|
 | Shadow: Blink | Right click | Short teleport toward where you are looking, never into a block |
-| Shadow: Swap | Left click | Trade places with whatever you are aiming at |
+| Shadow: Swap | Left click | Channel for three seconds, then trade places with whatever you aimed at |
 | Shadow: Body | Sneak + right click | Brief invisibility with the armor actually hidden |
 
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
@@ -274,11 +274,15 @@ abilities:
   shadow_blink:
     range: 14.0
     cooldown-ticks: 60
-    fall-grace-ticks: 100
 
   shadow_swap:
     range: 20.0
     allow-players: true
+    channel-ticks: 60
+    channel-min-speed-factor: 0.15
+    cancel-on-damage: true
+    warn-target: true
+    failed-cooldown-ticks: 40
     cooldown-ticks: 200
     fall-grace-ticks: 100
 
@@ -322,8 +326,11 @@ Notes on decisions that are not obvious:
 - `shadow_swap` ignores `targets.*` except through `allow-players`, which
   gates whether players are valid targets at all. Its claim rule is not tied
   to `respect-claims`: it always applies, like Bloom's.
-- The shadow abilities charge their cooldown on every cast that reaches them,
-  a refused one included, the same way Breaker charges on a miss.
+- The shadow abilities charge nothing on a cast that never reaches the
+  effect: a blink with no room or a swap with nothing in front of it. The
+  exceptions are the swap refusals that could be spammed to probe, a target
+  inside a claim on cast and a fizzled channel, which cost
+  `failed-cooldown-ticks`. `channel-min-speed-factor` is clamped to 0..1.
 
 ## How the sun works
 
@@ -383,7 +390,8 @@ others.
 ## How the shadow works
 
 The three shadow abilities have no lockout group and none of them spawns an
-entity or runs a repeating task.
+entity. The only repeating task is the swap channel's own, which lives
+exactly as long as the channel.
 
 - **Blink** ray traces blocks from the eye along the look direction up to
   `range`, ignoring passable blocks and fluids, and then walks back along
@@ -394,18 +402,38 @@ entity or runs a repeating task.
   fits within one block of the caster means no blink and no teleport. Because
   the destination is always on the unobstructed line of sight, Blink can
   never put the caster on the far side of a wall, and that is why it has no
-  claim check: it is equivalent to walking there. The caster gets fall grace
-  for `fall-grace-ticks` on arrival. The smoke and portal puff at the origin
-  is deliberate, it is what tells other players where you went.
-- **Swap** ray traces for the first living entity within `range` and trades
-  places with it, each keeping its own pitch and yaw, both with fall grace.
-  It skips the caster, NPCs, players in creative or spectator, anything
-  riding or being ridden, and players altogether when `allow-players` is
-  false. The trace ignores blocks, so unlike Blink this can cross a wall,
-  which is why it **always refuses** a target standing where the caster has
-  no build permission per GriefPrevention: swapping into someone's base would
-  be a real protection bypass. A player who gets swapped is told
-  `You were swapped by <caster>`.
+  claim check: it is equivalent to walking there. There is **no fall grace**:
+  teleporting gives you no control over gravity, so a badly aimed blink over
+  a drop hurts, and that is the skill in it. The smoke and portal puff at the
+  origin is deliberate, it is what tells other players where you went.
+- **Swap** is a **channel**. On cast it ray traces for the first living
+  entity within `range`, skipping the caster, NPCs, players in creative or
+  spectator, anything riding or being ridden, and players altogether when
+  `allow-players` is false, and locks that target for `channel-ticks`. The
+  trace ignores blocks, so unlike Blink this can cross a wall, which is why
+  it **always refuses** a target standing where the caster has no build
+  permission per GriefPrevention: swapping into someone's base would be a
+  real protection bypass. While the channel runs the caster slows down
+  gradually, through `Player#setWalkSpeed` and not a potion effect, from
+  their own walk speed down to that times `channel-min-speed-factor`; the
+  speed they had is stored at the start and restored on every exit path.
+  Smoke drifts inward from a ring that tightens and thickens as the channel
+  advances, the action bar shows a progress bar, and with `warn-target` on a
+  targeted player gets a message and particles, because the point of a
+  windup is that it can be answered. At the end the target is validated
+  again: still alive and valid, same world and within `range` of the
+  caster's eyes, still not mounted, still not in a claim the caster cannot
+  build in, and the caster not mounted either. Any of those failing makes
+  the channel **fizzle** with a message and `failed-cooldown-ticks` instead
+  of the full cooldown; running out of range is the counterplay, and it
+  pairs with the caster being slowed. On success both trade places, each
+  keeping its own pitch and yaw, both with fall grace for `fall-grace-ticks`
+  since both are moved against their will, the full cooldown starts, and a
+  swapped player is told `You were swapped by <caster>`. The channel is
+  cancelled, for nothing, by the caster taking any damage that actually went
+  through when `cancel-on-damage` is on, by left clicking again, and on
+  quit, death, world change and plugin disable. One channel per player at a
+  time.
 - **Body** gives the caster Invisibility for `duration-ticks`, particles
   hidden and icon visible, and with `hide-armor` on it hides what vanilla
   invisibility does not: every player tracking the caster is sent AIR for

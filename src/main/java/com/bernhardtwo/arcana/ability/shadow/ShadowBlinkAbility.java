@@ -21,7 +21,7 @@ import org.bukkit.util.Vector;
  * the unobstructed ray from the eye, walked back from the first solid block
  * until a standing player fits there, so it can never end up inside a block or
  * past a wall. No claim check: every destination is somewhere the caster could
- * see and walk to.
+ * see and walk to. No fall grace either: a blink over a drop hurts.
  */
 public final class ShadowBlinkAbility implements Ability {
 
@@ -51,6 +51,12 @@ public final class ShadowBlinkAbility implements Ability {
         return plugin.settings().shadowBlink().cooldownTicks();
     }
 
+    /** A refused blink, no room, charges nothing. */
+    @Override
+    public boolean startsCooldownOnCast() {
+        return false;
+    }
+
     @Override
     public void cast(Player caster) {
         ShadowBlinkSettings settings = plugin.settings().shadowBlink();
@@ -76,7 +82,7 @@ public final class ShadowBlinkAbility implements Ability {
         }
 
         caster.teleport(destination, PlayerTeleportEvent.TeleportCause.PLUGIN);
-        plugin.fallGrace().grant(caster.getUniqueId(), settings.fallGraceTicks());
+        plugin.store().startCooldownWithIndicator(caster, id(), settings.cooldownTicks());
 
         if (plugin.settings().effects()) {
             puff(world, origin);

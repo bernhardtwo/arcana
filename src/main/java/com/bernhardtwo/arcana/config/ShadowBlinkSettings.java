@@ -4,8 +4,7 @@ import org.bukkit.configuration.ConfigurationSection;
 
 public record ShadowBlinkSettings(
         double range,
-        int cooldownTicks,
-        int fallGraceTicks
+        int cooldownTicks
 ) {
 
     public static ShadowBlinkSettings from(ConfigurationSection section, ShadowBlinkSettings fallback) {
@@ -14,8 +13,7 @@ public record ShadowBlinkSettings(
         }
         return new ShadowBlinkSettings(
                 Math.max(1.0, section.getDouble("range", fallback.range())),
-                section.getInt("cooldown-ticks", fallback.cooldownTicks()),
-                section.getInt("fall-grace-ticks", fallback.fallGraceTicks())
+                section.getInt("cooldown-ticks", fallback.cooldownTicks())
         );
     }
 }
