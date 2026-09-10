@@ -26,6 +26,9 @@ public final class ArcanaConfig {
     private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 12.0, 5, 32, 1.6f,
             Color.fromRGB(0xFFFFFF), Color.fromRGB(0xFF6A00), true, 2.0, 0.02, 18000);
     private static final SolarBloomSettings BLOOM_DEFAULTS = new SolarBloomSettings(5, 12);
+    private static final ShadowBlinkSettings BLINK_DEFAULTS = new ShadowBlinkSettings(14.0, 60, 100);
+    private static final ShadowSwapSettings SWAP_DEFAULTS = new ShadowSwapSettings(20.0, true, 200, 100);
+    private static final ShadowBodySettings BODY_DEFAULTS = new ShadowBodySettings(100, true, true, 700);
 
     private final boolean effects;
     private final TargetRules targets;
@@ -38,11 +41,16 @@ public final class ArcanaConfig {
     private final SolarLanternSettings solarLantern;
     private final SolarZenithSettings solarZenith;
     private final SolarBloomSettings solarBloom;
+    private final ShadowBlinkSettings shadowBlink;
+    private final ShadowSwapSettings shadowSwap;
+    private final ShadowBodySettings shadowBody;
 
     private ArcanaConfig(boolean effects, TargetRules targets, GravitySettings push, GravitySettings pull,
                          LeapSettings leap, IceSlashSettings iceSlash, IceBreakerSettings iceBreaker,
                          IceArmorSettings iceArmor, SolarLanternSettings solarLantern,
-                         SolarZenithSettings solarZenith, SolarBloomSettings solarBloom) {
+                         SolarZenithSettings solarZenith, SolarBloomSettings solarBloom,
+                         ShadowBlinkSettings shadowBlink, ShadowSwapSettings shadowSwap,
+                         ShadowBodySettings shadowBody) {
         this.effects = effects;
         this.targets = targets;
         this.push = push;
@@ -54,6 +62,9 @@ public final class ArcanaConfig {
         this.solarLantern = solarLantern;
         this.solarZenith = solarZenith;
         this.solarBloom = solarBloom;
+        this.shadowBlink = shadowBlink;
+        this.shadowSwap = shadowSwap;
+        this.shadowBody = shadowBody;
     }
 
     public static ArcanaConfig load(FileConfiguration config, Logger logger) {
@@ -68,7 +79,10 @@ public final class ArcanaConfig {
                 IceArmorSettings.from(config.getConfigurationSection("abilities.ice_armor"), ARMOR_DEFAULTS, logger),
                 SolarLanternSettings.from(config.getConfigurationSection("abilities.solar_lantern"), LANTERN_DEFAULTS),
                 SolarZenithSettings.from(config.getConfigurationSection("abilities.solar_zenith"), ZENITH_DEFAULTS, logger),
-                SolarBloomSettings.from(config.getConfigurationSection("abilities.solar_bloom"), BLOOM_DEFAULTS)
+                SolarBloomSettings.from(config.getConfigurationSection("abilities.solar_bloom"), BLOOM_DEFAULTS),
+                ShadowBlinkSettings.from(config.getConfigurationSection("abilities.shadow_blink"), BLINK_DEFAULTS),
+                ShadowSwapSettings.from(config.getConfigurationSection("abilities.shadow_swap"), SWAP_DEFAULTS),
+                ShadowBodySettings.from(config.getConfigurationSection("abilities.shadow_body"), BODY_DEFAULTS)
         );
     }
 
@@ -114,5 +128,17 @@ public final class ArcanaConfig {
 
     public SolarBloomSettings solarBloom() {
         return solarBloom;
+    }
+
+    public ShadowBlinkSettings shadowBlink() {
+        return shadowBlink;
+    }
+
+    public ShadowSwapSettings shadowSwap() {
+        return shadowSwap;
+    }
+
+    public ShadowBodySettings shadowBody() {
+        return shadowBody;
     }
 }

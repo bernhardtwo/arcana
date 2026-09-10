@@ -97,3 +97,20 @@ abilities:
   solar_bloom:
     max-charges: 5
     charge-regen-minutes: 12
+
+  shadow_blink:
+    range: 14.0
+    cooldown-ticks: 60
+    fall-grace-ticks: 100
+
+  shadow_swap:
+    range: 20.0
+    allow-players: true
+    cooldown-ticks: 200
+    fall-grace-ticks: 100
+
+  shadow_body:
+    duration-ticks: 100
+    break-on-attack: true
+    hide-armor: true
+    cooldown-ticks: 700

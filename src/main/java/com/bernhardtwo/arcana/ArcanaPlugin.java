@@ -10,6 +10,9 @@ import com.bernhardtwo.arcana.ability.ice.Frost;
 import com.bernhardtwo.arcana.ability.ice.IceArmorAbility;
 import com.bernhardtwo.arcana.ability.ice.IceBreakerAbility;
 import com.bernhardtwo.arcana.ability.ice.IceSlashAbility;
+import com.bernhardtwo.arcana.ability.shadow.ShadowBlinkAbility;
+import com.bernhardtwo.arcana.ability.shadow.ShadowBodyAbility;
+import com.bernhardtwo.arcana.ability.shadow.ShadowSwapAbility;
 import com.bernhardtwo.arcana.ability.solar.SolarBloomAbility;
 import com.bernhardtwo.arcana.ability.solar.SolarLanternAbility;
 import com.bernhardtwo.arcana.ability.solar.SolarZenithAbility;
@@ -22,6 +25,7 @@ import com.bernhardtwo.arcana.listener.AbilityUseListener;
 import com.bernhardtwo.arcana.listener.FallDamageListener;
 import com.bernhardtwo.arcana.listener.IceArmorListener;
 import com.bernhardtwo.arcana.listener.IceListener;
+import com.bernhardtwo.arcana.listener.ShadowListener;
 import com.bernhardtwo.arcana.listener.SolarListener;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -46,6 +50,7 @@ public final class ArcanaPlugin extends JavaPlugin {
     private IceArmorAbility iceArmor;
     private SolarLanternAbility solarLantern;
     private SolarZenithAbility solarZenith;
+    private ShadowBodyAbility shadowBody;
 
     @Override
     public void onEnable() {
@@ -74,6 +79,10 @@ public final class ArcanaPlugin extends JavaPlugin {
         solarZenith = new SolarZenithAbility(this);
         abilities.register(solarZenith);
         abilities.register(new SolarBloomAbility(this));
+        abilities.register(new ShadowBlinkAbility(this));
+        abilities.register(new ShadowSwapAbility(this));
+        shadowBody = new ShadowBodyAbility(this);
+        abilities.register(shadowBody);
         solarZenith.removeOrphanLights();
 
         wands = new WandRegistry();
@@ -83,12 +92,15 @@ public final class ArcanaPlugin extends JavaPlugin {
                 "ice_breaker", "ice_armor", "ice_slash"));
         wands.register(new Wand("solar", "Solar Staff", Material.BREEZE_ROD,
                 "solar_lantern", "solar_zenith", "solar_bloom"));
+        wands.register(new Wand("shadow", "Shadow Staff", Material.ECHO_SHARD,
+                "shadow_blink", "shadow_body", "shadow_swap"));
 
         getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
         getServer().getPluginManager().registerEvents(new FallDamageListener(this), this);
         getServer().getPluginManager().registerEvents(new IceListener(this), this);
         getServer().getPluginManager().registerEvents(new IceArmorListener(iceArmor), this);
         getServer().getPluginManager().registerEvents(new SolarListener(solarLantern, solarZenith), this);
+        getServer().getPluginManager().registerEvents(new ShadowListener(this, shadowBody), this);
 
         PluginCommand command = getCommand("arcana");
         if (command != null) {
@@ -115,6 +127,9 @@ public final class ArcanaPlugin extends JavaPlugin {
         }
         if (solarZenith != null) {
             solarZenith.endAll();
+        }
+        if (shadowBody != null) {
+            shadowBody.endAll();
         }
     }
 

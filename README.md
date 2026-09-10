@@ -3,7 +3,7 @@
 Item-bound magic abilities for Paper servers. A staff in hand, right click,
 and something happens around you.
 
-Three staffs so far.
+Four staffs so far.
 
 **Gravity Staff** (blaze rod)
 
@@ -28,6 +28,14 @@ Three staffs so far.
 | Solar: Lantern | Right click (toggle) | Night vision and a small orbiting light, right click again to put it out |
 | Solar: Zenith | Sneak + right click | A sun above you that burns hostiles and heals the peaceful until you walk away |
 | Solar: Bloom | Left click on a block | Bone meal without bone meal, from a pool of charges |
+
+**Shadow Staff** (echo shard)
+
+| Ability | How to cast | What it does |
+|---|---|---|
+| Shadow: Blink | Right click | Short teleport toward where you are looking, never into a block |
+| Shadow: Swap | Left click | Trade places with whatever you are aiming at |
+| Shadow: Body | Sneak + right click | Brief invisibility with the armor actually hidden |
 
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
@@ -80,7 +88,7 @@ removed, `Cleared 4 cooldowns and refilled 1 charge pool for vegabernh`, and
 never errors on a player who has none. It exists for balancing: without it
 the only way to skip a 15 minute cooldown is deleting the playerdata file.
 
-Registered staffs: `gravity`, `ice` and `solar`.
+Registered staffs: `gravity`, `ice`, `solar` and `shadow`.
 
 ## Permissions
 
@@ -96,6 +104,9 @@ Registered staffs: `gravity`, `ice` and `solar`.
 | `arcana.use.solar_lantern` | true | Cast Lantern |
 | `arcana.use.solar_zenith` | true | Cast Zenith |
 | `arcana.use.solar_bloom` | true | Cast Bloom |
+| `arcana.use.shadow_blink` | true | Cast Blink |
+| `arcana.use.shadow_swap` | true | Cast Swap |
+| `arcana.use.shadow_body` | true | Cast Body |
 
 The `arcana.use.*` nodes are checked on every cast, so they can be handed out
 per rank from LuckPerms without touching the plugin.
@@ -259,6 +270,23 @@ abilities:
   solar_bloom:
     max-charges: 5
     charge-regen-minutes: 12
+
+  shadow_blink:
+    range: 14.0
+    cooldown-ticks: 60
+    fall-grace-ticks: 100
+
+  shadow_swap:
+    range: 20.0
+    allow-players: true
+    cooldown-ticks: 200
+    fall-grace-ticks: 100
+
+  shadow_body:
+    duration-ticks: 100
+    break-on-attack: true
+    hide-armor: true
+    cooldown-ticks: 700
 ```
 
 Notes on decisions that are not obvious:
@@ -291,6 +319,11 @@ Notes on decisions that are not obvious:
 - `solar_bloom` has no `cooldown-ticks`. Its limit is the charge pool, and
   `charge-regen-minutes` is read on every use, so changing it applies to
   charges already regenerating.
+- `shadow_swap` ignores `targets.*` except through `allow-players`, which
+  gates whether players are valid targets at all. Its claim rule is not tied
+  to `respect-claims`: it always applies, like Bloom's.
+- The shadow abilities charge their cooldown on every cast that reaches them,
+  a refused one included, the same way Breaker charges on a miss.
 
 ## How the sun works
 
@@ -346,6 +379,47 @@ others.
   is spent **only** when the bone meal did something: clicking stone or a
   fully grown crop costs nothing. Success shows happy villager particles and
   an action bar with the charges left and the time until the next one.
+
+## How the shadow works
+
+The three shadow abilities have no lockout group and none of them spawns an
+entity or runs a repeating task.
+
+- **Blink** ray traces blocks from the eye along the look direction up to
+  `range`, ignoring passable blocks and fluids, and then walks back along
+  that ray from the impact point, a quarter block at a time, until it finds
+  the furthest point where a standing player fits: a 0.6 by 1.8 box there
+  touches no block, no hard entity such as a boat, is inside the world
+  border and above the void. That point becomes the feet position. Nothing
+  fits within one block of the caster means no blink and no teleport. Because
+  the destination is always on the unobstructed line of sight, Blink can
+  never put the caster on the far side of a wall, and that is why it has no
+  claim check: it is equivalent to walking there. The caster gets fall grace
+  for `fall-grace-ticks` on arrival. The smoke and portal puff at the origin
+  is deliberate, it is what tells other players where you went.
+- **Swap** ray traces for the first living entity within `range` and trades
+  places with it, each keeping its own pitch and yaw, both with fall grace.
+  It skips the caster, NPCs, players in creative or spectator, anything
+  riding or being ridden, and players altogether when `allow-players` is
+  false. The trace ignores blocks, so unlike Blink this can cross a wall,
+  which is why it **always refuses** a target standing where the caster has
+  no build permission per GriefPrevention: swapping into someone's base would
+  be a real protection bypass. A player who gets swapped is told
+  `You were swapped by <caster>`.
+- **Body** gives the caster Invisibility for `duration-ticks`, particles
+  hidden and icon visible, and with `hide-armor` on it hides what vanilla
+  invisibility does not: every player tracking the caster is sent AIR for
+  the four armor slots and both hands through `Player#sendEquipmentChange`,
+  and the real items when it ends. A player who joins or comes into range
+  while it is active gets the override one tick after they start tracking
+  the caster, since the spawn packets carry the real equipment. Equipment
+  changed mid-body is not re-hidden, it is a five second window. With
+  `break-on-attack` on, dealing damage to any entity, melee, projectile or
+  through another staff, ends it at once with a message, which keeps it an
+  escape and ambush tool instead of a free gank. It ends when the duration
+  elapses, on attack when enabled, on quit, death, world change, when the
+  effect is removed by anything else (milk), and on plugin disable, and the
+  armor is restored on every one of those paths.
 
 ## Cooldowns and charges
 

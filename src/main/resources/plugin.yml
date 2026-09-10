@@ -43,3 +43,12 @@ permissions:
   arcana.use.solar_bloom:
     description: "Allows casting Solar: Bloom."
     default: true
+  arcana.use.shadow_blink:
+    description: "Allows casting Shadow: Blink."
+    default: true
+  arcana.use.shadow_swap:
+    description: "Allows casting Shadow: Swap."
+    default: true
+  arcana.use.shadow_body:
+    description: "Allows casting Shadow: Body."
+    default: true
