@@ -244,7 +244,8 @@ abilities:
     marker-color-a: "FFFFFF"
     marker-color-b: "FF6A00"
     marker-force-render: true
-    marker-pillars: 8
+    marker-gradient-cycles: 2.0
+    marker-gradient-speed: 0.02
     cooldown-ticks: 18000
 
   solar_bloom:
@@ -313,19 +314,21 @@ others.
   matches PvP being free only outside claims; the caster, villagers, tamed
   animals and every other non-hostile mob heal `heal-amount`, capped at max
   health, with heart particles when something was actually healed. The
-  boundary is marked two ways, both visible to everyone. A **wall** of dust
-  particles at `radius`: `marker-rings` rings of `marker-points-per-ring`
-  points stacked over `marker-height` blocks centered on the cast height,
-  refreshed every `marker-interval` ticks, with `marker-color-a` and
-  `marker-color-b` alternating point by point so one of them always contrasts
-  with whatever is behind, at `marker-particle-size`, and forced with
+  boundary is a **wall** of dust particles at `radius`, visible to everyone:
+  `marker-rings` rings of `marker-points-per-ring` points stacked over
+  `marker-height` blocks centered on the cast height, refreshed every
+  `marker-interval` ticks at `marker-particle-size`, and forced with
   `marker-force-render` so they carry to long range regardless of the
-  client's particle setting. There is a hard cap of 400 points per refresh,
-  so a big radius gets sparser rings, not more particles, and points inside
-  solid blocks are skipped. And `marker-pillars` **glowing pillars** spaced
-  evenly around the perimeter, display entities whose outline renders through
-  blocks, so the boundary can be located from anywhere inside a cave. Zero
-  disables them. The sun has **no time cap**, by design: it ends when the caster
+  client's particle setting. The color of each point is a **flowing
+  gradient** between `marker-color-a` and `marker-color-b`: a triangle wave
+  over the point's angle, its ring and a phase that advances every refresh,
+  so it ramps A to B and back with no seam and reads as bands of color
+  travelling around and along the wall. `marker-gradient-cycles` is how many
+  full A to B to A bands are visible around the perimeter at once, and
+  `marker-gradient-speed` is how far the bands move per refresh, in cycles;
+  zero gives a static gradient. There is a hard cap of 400 points per
+  refresh, so a big radius gets sparser rings, not more particles, and points
+  inside solid blocks are skipped. The sun has **no time cap**, by design: it ends when the caster
   leaves the radius, and also on quit, death, world change and plugin disable.
   The full cooldown starts when the sun ends, like Ice Armor.
 - **Bloom** applies bone meal to the clicked block, through
@@ -374,9 +377,9 @@ console, and the abilities keep working without claim protection.
   reports, the same one vanilla uses for fall distance.
 - Zenith is the one ability that places a block. It is a single `LIGHT`
   block, invisible and passable, only in air and only where the caster may
-  build, tracked on disk so a crash cannot leave it behind. The sun and the
-  boundary pillars are non-persistent displays tagged like the ice crystals,
-  removed on every end path and swept on startup. If the server dies
+  build, tracked on disk so a crash cannot leave it behind. The sun itself is
+  a non-persistent display tagged like the ice crystals, removed on every end
+  path and swept on startup. If the server dies
   between placing the block and writing `lights.yml` (microseconds), that one
   block survives until someone breaks it or a zenith is cast there again.
 - Dragon breath is an area effect cloud, not a living entity or a projectile,

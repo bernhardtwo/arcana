@@ -90,7 +90,8 @@ abilities:
     marker-color-a: "FFFFFF"
     marker-color-b: "FF6A00"
     marker-force-render: true
-    marker-pillars: 8
+    marker-gradient-cycles: 2.0
+    marker-gradient-speed: 0.02
     cooldown-ticks: 18000
 
   solar_bloom:

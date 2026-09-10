@@ -24,7 +24,7 @@ public final class ArcanaConfig {
                     EnumSet.of(EntityType.WARDEN, EntityType.ENDER_DRAGON, EntityType.WITHER, EntityType.GHAST));
     private static final SolarLanternSettings LANTERN_DEFAULTS = new SolarLanternSettings(24000, 12000, 0.9);
     private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 12.0, 5, 32, 1.6f,
-            Color.fromRGB(0xFFFFFF), Color.fromRGB(0xFF6A00), true, 8, 18000);
+            Color.fromRGB(0xFFFFFF), Color.fromRGB(0xFF6A00), true, 2.0, 0.02, 18000);
     private static final SolarBloomSettings BLOOM_DEFAULTS = new SolarBloomSettings(5, 12);
 
     private final boolean effects;

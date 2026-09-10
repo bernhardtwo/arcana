@@ -18,16 +18,11 @@ public final class Displays {
 
     /** A full-bright cube of {@code scale} blocks centered on {@code at}, tagged as ours and never written to disk. */
     public static BlockDisplay spawn(ArcanaPlugin plugin, Location at, Material material, float scale) {
-        return spawn(plugin, at, material, new Vector3f(scale));
-    }
-
-    /** Same as above with a per-axis size, for pillars and slabs. */
-    public static BlockDisplay spawn(ArcanaPlugin plugin, Location at, Material material, Vector3f size) {
         return at.getWorld().spawn(at, BlockDisplay.class, display -> {
             display.setBlock(material.createBlockData());
             display.setTransformation(new Transformation(
-                    new Vector3f(size).mul(-0.5f), new AxisAngle4f(),
-                    new Vector3f(size), new AxisAngle4f()));
+                    new Vector3f(-scale / 2.0f), new AxisAngle4f(),
+                    new Vector3f(scale), new AxisAngle4f()));
             display.setBrightness(new Display.Brightness(15, 15));
             display.setTeleportDuration(1);
             // Never written to disk: a crash or a hard kill cannot leave orphans in the world.

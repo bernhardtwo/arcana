@@ -19,7 +19,8 @@ public record SolarZenithSettings(
         Color markerColorA,
         Color markerColorB,
         boolean markerForceRender,
-        int markerPillars,
+        double markerGradientCycles,
+        double markerGradientSpeed,
         int cooldownTicks
 ) {
 
@@ -41,7 +42,8 @@ public record SolarZenithSettings(
                 color(section, "marker-color-a", fallback.markerColorA(), logger),
                 color(section, "marker-color-b", fallback.markerColorB(), logger),
                 section.getBoolean("marker-force-render", fallback.markerForceRender()),
-                Math.max(0, section.getInt("marker-pillars", fallback.markerPillars())),
+                Math.max(0.0, section.getDouble("marker-gradient-cycles", fallback.markerGradientCycles())),
+                section.getDouble("marker-gradient-speed", fallback.markerGradientSpeed()),
                 section.getInt("cooldown-ticks", fallback.cooldownTicks())
         );
     }

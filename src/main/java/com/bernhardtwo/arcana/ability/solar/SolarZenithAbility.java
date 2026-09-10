@@ -32,23 +32,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
-import org.joml.Vector3f;
 
 /**
  * A static sun above the cast point. Burns hostiles and unclaimed players,
  * heals the caster and the peaceful, until the caster walks out of the
  * radius. Every exit path goes through {@link #end(UUID, String)}, which also
- * removes the glowing boundary pillars and the one real light block the sun
- * placed; the light positions are written to {@code lights.yml} so a crash can
- * be cleaned up on the next start. Every display is tagged and non-persistent,
- * so the startup sweep covers the sun and the pillars alike.
+ * removes the one real light block the sun placed; the light positions are
+ * written to {@code lights.yml} so a crash can be cleaned up on the next start.
+ * The sun display is tagged and non-persistent, so the startup sweep covers it.
  */
 public final class SolarZenithAbility implements Ability {
 
     private static final float SUN_SCALE = 3.0f;
     // Hard cap on particles per refresh, whatever the config asks for.
     private static final int MAX_MARKER_POINTS = 400;
-    private static final float PILLAR_WIDTH = 0.3f;
     private static final Particle.DustOptions HEAL_MARK = new Particle.DustOptions(Color.YELLOW, 1.0f);
 
     private final ArcanaPlugin plugin;
@@ -57,11 +54,11 @@ public final class SolarZenithAbility implements Ability {
 
     private static final class Sun {
         private BlockDisplay display;
-        private final List<BlockDisplay> pillars = new ArrayList<>();
         private Location center;
         private Location light;
         private int groundY;
         private int ticks;
+        private double gradientPhase;
     }
 
     public SolarZenithAbility(ArcanaPlugin plugin) {
@@ -102,7 +99,6 @@ public final class SolarZenithAbility implements Ability {
         sun.center = caster.getLocation().add(0.0, settings.height(), 0.0).toCenterLocation();
         sun.display = Displays.spawn(plugin, sun.center, Material.GLOWSTONE, SUN_SCALE);
         sun.display.setGlowing(true);
-        spawnPillars(sun, settings);
 
         Block block = sun.center.getBlock();
         if (block.getType().isAir() && !plugin.claims().isBlocked(caster, block.getLocation())) {
@@ -190,53 +186,55 @@ public final class SolarZenithAbility implements Ability {
 
     /**
      * Wall of dust particles at the radius: {@code marker-rings} rings spread
-     * over {@code marker-height} blocks centered on the cast height, two
-     * colors alternating point by point so one of them always contrasts with
-     * the background, and forced so they render at long range regardless of
-     * the client's particle setting. The total per refresh is capped; points
-     * inside solid blocks are skipped because they would not render anyway.
+     * over {@code marker-height} blocks centered on the cast height, forced so
+     * they render at long range regardless of the client's particle setting.
+     * Each point's color is a triangle-wave blend of the two marker colors,
+     * keyed on its angle, its ring and a phase that advances every refresh, so
+     * bands of color travel around and along the wall with no seam. The total
+     * per refresh is capped; points inside solid blocks are skipped because
+     * they would not render anyway.
      */
     private void drawCylinder(Sun sun, SolarZenithSettings settings) {
         World world = sun.center.getWorld();
         int rings = settings.markerRings();
         int points = Math.max(4, Math.min(settings.markerPointsPerRing(), MAX_MARKER_POINTS / rings));
-        Particle.DustOptions[] colors = {
-                new Particle.DustOptions(settings.markerColorA(), settings.markerParticleSize()),
-                new Particle.DustOptions(settings.markerColorB(), settings.markerParticleSize())
-        };
         boolean force = settings.markerForceRender();
         double bottom = sun.groundY + 0.5 - settings.markerHeight() / 2.0;
         double step = rings == 1 ? 0.0 : settings.markerHeight() / (rings - 1);
+        sun.gradientPhase += settings.markerGradientSpeed();
         for (int ring = 0; ring < rings; ring++) {
             double y = bottom + ring * step;
             // Alternate rings are offset by half a step so the wall has no empty vertical columns.
-            double phase = ring % 2 == 0 ? 0.0 : Math.PI / points;
+            double offset = ring % 2 == 0 ? 0.0 : Math.PI / points;
+            // Half a band across the full height tilts the bands so they flow along the wall, not only around it.
+            double ringShift = rings == 1 ? 0.0 : 0.5 * ring / (rings - 1);
             for (int i = 0; i < points; i++) {
-                double theta = phase + 2.0 * Math.PI * i / points;
+                double theta = offset + 2.0 * Math.PI * i / points;
                 double x = sun.center.getX() + Math.cos(theta) * settings.radius();
                 double z = sun.center.getZ() + Math.sin(theta) * settings.radius();
-                if (world.getBlockAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z)).isPassable()) {
-                    world.spawnParticle(Particle.DUST, x, y, z, 1, 0.0, 0.0, 0.0, 0.0, colors[i % 2], force);
+                if (!world.getBlockAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z)).isPassable()) {
+                    continue;
                 }
+                double phase = settings.markerGradientCycles() * theta / (2.0 * Math.PI) + ringShift + sun.gradientPhase;
+                Particle.DustOptions dust = new Particle.DustOptions(
+                        blend(settings.markerColorA(), settings.markerColorB(), triangle(phase)),
+                        settings.markerParticleSize());
+                world.spawnParticle(Particle.DUST, x, y, z, 1, 0.0, 0.0, 0.0, 0.0, dust, force);
             }
         }
     }
 
-    /** Glowing pillars around the perimeter: their outline renders through blocks, so a cave cannot hide the boundary. */
-    private void spawnPillars(Sun sun, SolarZenithSettings settings) {
-        int count = settings.markerPillars();
-        if (count <= 0) {
-            return;
-        }
-        float height = (float) Math.max(1.0, settings.markerHeight());
-        Vector3f size = new Vector3f(PILLAR_WIDTH, height, PILLAR_WIDTH);
-        Location center = new Location(sun.center.getWorld(), sun.center.getX(), sun.groundY + 0.5, sun.center.getZ());
-        for (int i = 0; i < count; i++) {
-            Location at = Displays.orbitPoint(center, 0.0, i, count, settings.radius());
-            BlockDisplay pillar = Displays.spawn(plugin, at, Material.GLOWSTONE, size);
-            pillar.setGlowing(true);
-            sun.pillars.add(pillar);
-        }
+    /** 0 at whole phases, 1 at half phases, linear in between: A to B and back with no seam. */
+    private static double triangle(double phase) {
+        double t = phase - Math.floor(phase);
+        return 1.0 - Math.abs(2.0 * t - 1.0);
+    }
+
+    private static Color blend(Color a, Color b, double t) {
+        return Color.fromRGB(
+                (int) Math.round(a.getRed() + (b.getRed() - a.getRed()) * t),
+                (int) Math.round(a.getGreen() + (b.getGreen() - a.getGreen()) * t),
+                (int) Math.round(a.getBlue() + (b.getBlue() - a.getBlue()) * t));
     }
 
     /** Ends the sun for any reason: removes the display and the light block, then starts the full cooldown. */
@@ -246,7 +244,6 @@ public final class SolarZenithAbility implements Ability {
             return;
         }
         sun.display.remove();
-        sun.pillars.forEach(BlockDisplay::remove);
         removeLight(sun.light);
         saveLights();
         Player online = Bukkit.getPlayer(player);
