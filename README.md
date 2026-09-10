@@ -37,7 +37,7 @@ Five staffs so far.
 | Shadow: Swap | Left click | Channel for three seconds, then trade places with whatever you aimed at |
 | Shadow: Body | Sneak + right click | Brief invisibility with the armor actually hidden |
 
-**Chain Staff** (iron chain)
+**Chainshot** (iron chain)
 
 | Ability | How to cast | What it does |
 |---|---|---|
@@ -205,6 +205,10 @@ targets:
   passives: true
   armor-stands: false
   respect-claims: true
+
+items:
+  protect-from-crafting: true
+  indestructible-when-dropped: true
 
 abilities:
   gravity_push:
@@ -573,7 +577,19 @@ stonecutter, brewing stand, loom, cartography table, enchanting table) is
 refused, as is a hopper feeding one in. The player gets
 `Arcana items cannot be crafted or placed` on the action bar, at most once
 a second. Chests, barrels, shulker boxes and ender chests are untouched:
-storing a wand is normal, destroying one is not.
+storing a wand is normal, destroying one is not. This is
+`items.protect-from-crafting`.
+
+A tagged item on the ground is also **indestructible**: the moment an item
+entity spawns, dropped by hand, dropped on death or popped out of a broken
+block, it is made invulnerable and given unlimited lifetime, so lava, fire,
+explosions and cactus cannot destroy it and it never despawns. Damage to a
+tagged item entity is cancelled as well, as a backstop. The void still
+deletes it, nothing can be done there, and merging and pickup are untouched.
+This is `items.indestructible-when-dropped`, applied when the item spawns:
+turning it off leaves items already on the ground protected until they are
+picked up and dropped again. Both flags default to true; a server that
+wants wands to be losable turns them off.
 
 ## Cooldowns and charges
 

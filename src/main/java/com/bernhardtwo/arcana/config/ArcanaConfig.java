@@ -38,6 +38,7 @@ public final class ArcanaConfig {
 
     private final boolean effects;
     private final TargetRules targets;
+    private final ItemSettings items;
     private final GravitySettings push;
     private final GravitySettings pull;
     private final LeapSettings leap;
@@ -54,7 +55,7 @@ public final class ArcanaConfig {
     private final ChainReelSettings chainReel;
     private final ChainRendSettings chainRend;
 
-    private ArcanaConfig(boolean effects, TargetRules targets, GravitySettings push, GravitySettings pull,
+    private ArcanaConfig(boolean effects, TargetRules targets, ItemSettings items, GravitySettings push, GravitySettings pull,
                          LeapSettings leap, IceSlashSettings iceSlash, IceBreakerSettings iceBreaker,
                          IceArmorSettings iceArmor, SolarLanternSettings solarLantern,
                          SolarZenithSettings solarZenith, SolarBloomSettings solarBloom,
@@ -63,6 +64,7 @@ public final class ArcanaConfig {
                          ChainReelSettings chainReel, ChainRendSettings chainRend) {
         this.effects = effects;
         this.targets = targets;
+        this.items = items;
         this.push = push;
         this.pull = pull;
         this.leap = leap;
@@ -84,6 +86,7 @@ public final class ArcanaConfig {
         return new ArcanaConfig(
                 config.getBoolean("effects", true),
                 TargetRules.from(config.getConfigurationSection("targets")),
+                ItemSettings.from(config.getConfigurationSection("items")),
                 GravitySettings.from(config.getConfigurationSection("abilities.gravity_push"), PUSH_DEFAULTS),
                 GravitySettings.from(config.getConfigurationSection("abilities.gravity_pull"), PULL_DEFAULTS),
                 LeapSettings.from(config.getConfigurationSection("abilities.gravity_leap"), LEAP_DEFAULTS),
@@ -108,6 +111,10 @@ public final class ArcanaConfig {
 
     public TargetRules targets() {
         return targets;
+    }
+
+    public ItemSettings items() {
+        return items;
     }
 
     public GravitySettings push() {

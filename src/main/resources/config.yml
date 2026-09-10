@@ -11,6 +11,10 @@ targets:
   armor-stands: false
   respect-claims: true
 
+items:
+  protect-from-crafting: true
+  indestructible-when-dropped: true
+
 abilities:
   gravity_push:
     radius: 12.0

@@ -33,7 +33,8 @@ import java.util.UUID;
  * blaze rods burn and craft, breeze rods and echo shards craft. This blocks
  * all of that for anything carrying an Arcana tag, by the tag alone, so
  * items added later are covered without touching this class. Storage
- * inventories are untouched: putting a wand in a chest is normal.
+ * inventories are untouched: putting a wand in a chest is normal. Gated by
+ * {@code items.protect-from-crafting}.
  */
 public final class ItemGuardListener implements Listener {
 
@@ -142,8 +143,9 @@ public final class ItemGuardListener implements Listener {
         lastMessageTick.remove(event.getPlayer().getUniqueId());
     }
 
+    /** Tagged, and the crafting guard is on: every handler decides through this, so the flag lives here. */
     private boolean isArcana(ItemStack stack) {
-        return AbilityItems.isArcana(plugin, stack);
+        return plugin.settings().items().protectFromCrafting() && AbilityItems.isArcana(plugin, stack);
     }
 
     private boolean anyArcana(ItemStack[] stacks) {

@@ -27,6 +27,7 @@ import com.bernhardtwo.arcana.item.Wand;
 import com.bernhardtwo.arcana.item.WandRegistry;
 import com.bernhardtwo.arcana.listener.AbilityUseListener;
 import com.bernhardtwo.arcana.listener.ChainListener;
+import com.bernhardtwo.arcana.listener.DroppedItemListener;
 import com.bernhardtwo.arcana.listener.FallDamageListener;
 import com.bernhardtwo.arcana.listener.IceArmorListener;
 import com.bernhardtwo.arcana.listener.IceListener;
@@ -109,11 +110,12 @@ public final class ArcanaPlugin extends JavaPlugin {
                 "solar_lantern", "solar_zenith", "solar_bloom"));
         wands.register(new Wand("shadow", "Shadow Staff", Material.ECHO_SHARD,
                 "shadow_blink", "shadow_body", "shadow_swap"));
-        wands.register(new Wand("chain", "Chain Staff", Material.IRON_CHAIN,
+        wands.register(new Wand("chain", "Chainshot", Material.IRON_CHAIN,
                 "chain_reel", "chain_rend", "chain_hook"));
 
         getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
         getServer().getPluginManager().registerEvents(new ItemGuardListener(this), this);
+        getServer().getPluginManager().registerEvents(new DroppedItemListener(this), this);
         getServer().getPluginManager().registerEvents(new FallDamageListener(this), this);
         getServer().getPluginManager().registerEvents(new IceListener(this), this);
         getServer().getPluginManager().registerEvents(new IceArmorListener(iceArmor), this);
