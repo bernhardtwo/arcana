@@ -5,6 +5,7 @@ import com.bernhardtwo.arcana.ability.Ability;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -35,6 +36,24 @@ public final class AbilityItems {
 
         stack.setItemMeta(meta);
         return stack;
+    }
+
+    /**
+     * Whether the stack carries any tag in this plugin's namespace: a wand
+     * today, and whatever else gets tagged later. Only wand identification
+     * needs a specific key; protection asks this.
+     */
+    public static boolean isArcana(ArcanaPlugin plugin, ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) {
+            return false;
+        }
+        String namespace = plugin.wandKey().getNamespace();
+        for (NamespacedKey key : stack.getItemMeta().getPersistentDataContainer().getKeys()) {
+            if (key.getNamespace().equals(namespace)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static Optional<Wand> wandOf(ArcanaPlugin plugin, ItemStack stack) {

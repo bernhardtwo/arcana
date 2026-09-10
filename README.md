@@ -518,7 +518,10 @@ has a lockout group.
   it. Nothing found within `range` retracts the claw with a sound and no
   cooldown. Latching charges the cooldown, says what was caught, and from
   then on a chain of dust links is drawn every tick from the caster's hand to
-  the claw, which follows an entity anchor around. The hook releases by
+  the claw, which follows an entity anchor around, and chain links clink
+  every few ticks while it flies and softly while it holds, both at the
+  claw for bystanders and to the caster directly so the ability is never
+  silent at range. The hook releases by
   itself after `hold-ticks`, when the anchored entity dies or leaves, when
   the anchored block is gone, or when the distance from the caster's eyes to
   the claw exceeds `range` because either side moved. Firing again while
@@ -539,8 +542,9 @@ has a lockout group.
   Both release the hook when the pull finishes.
 - **Rend** spins the claw at the anchor. On an **entity** it deals
   `entity-damage` through `LivingEntity#damage(amount, caster)`, so PvP
-  rules apply as always, with crit points circling the target. On a
-  **block** it breaks it, with `block-drop-chance` odds of the normal drops,
+  rules apply as always, with crit points circling the target and a crit
+  impact sound. On a **block** it breaks it with the block's own vanilla
+  break sound, with `block-drop-chance` odds of the normal drops,
   as if mined with a diamond pickaxe; the rest of the time the block simply
   vanishes. The chance is there so this is not a way to mine diamonds
   without ever making an iron pickaxe. Every guard must pass, or the break
@@ -552,6 +556,24 @@ has a lockout group.
   caster before the block goes, so `/co inspect` shows it and a rollback
   restores it; without that, blocks removed by a plugin leave no trace. Rend
   releases the hook after use.
+
+## Item protection
+
+Every staff is a vanilla item with vanilla uses: an end rod or a chain
+places as a block, from either hand, a blaze rod burns as fuel and crafts
+into blaze powder, a breeze rod crafts into wind charges, an echo shard into
+a recovery compass. Anything carrying an Arcana tag is kept out of all of
+that, by the tag alone and not by material, so items added later are
+covered automatically. Placing is cancelled from either hand, crafting is
+refused and shows no result while a tagged item sits in the grid, a furnace
+never burns one as fuel, and a click, drag or shift click that would move
+one into a crafting or processing inventory (crafting grid, crafter,
+furnace, blast furnace, smoker, anvil, smithing table, grindstone,
+stonecutter, brewing stand, loom, cartography table, enchanting table) is
+refused, as is a hopper feeding one in. The player gets
+`Arcana items cannot be crafted or placed` on the action bar, at most once
+a second. Chests, barrels, shulker boxes and ender chests are untouched:
+storing a wand is normal, destroying one is not.
 
 ## Cooldowns and charges
 

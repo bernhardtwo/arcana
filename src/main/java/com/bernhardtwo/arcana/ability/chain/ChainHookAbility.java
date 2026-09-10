@@ -41,6 +41,8 @@ public final class ChainHookAbility implements Ability {
     private static final float CLAW_SCALE = 0.45f;
     private static final double RAY_SIZE = 0.3;
     private static final double LINK_SPACING = 0.4;
+    private static final int TRAVEL_SOUND_INTERVAL = 3;
+    private static final int HOLD_SOUND_INTERVAL = 12;
     private static final Vector UP = new Vector(0.0, 1.0, 0.0);
     private static final Particle.DustOptions LINK = new Particle.DustOptions(Color.fromRGB(0x74736F), 0.55f);
 
@@ -57,6 +59,7 @@ public final class ChainHookAbility implements Ability {
         private Block block;
         private LivingEntity entity;
         private int holdLeft;
+        private int age;
         private BukkitTask reel;
 
         public boolean isAnchored() {
@@ -156,6 +159,7 @@ public final class ChainHookAbility implements Ability {
                 release(entry.getKey(), null);
                 continue;
             }
+            hook.age++;
             if (hook.isAnchored()) {
                 hold(caster, hook, settings);
             } else {
@@ -163,6 +167,7 @@ public final class ChainHookAbility implements Ability {
             }
             if (active.containsKey(entry.getKey()) && plugin.settings().effects()) {
                 drawChain(caster, hook);
+                rattle(caster, hook);
             }
         }
     }
@@ -200,8 +205,29 @@ public final class ChainHookAbility implements Ability {
         plugin.store().startCooldownWithIndicator(caster, id(), settings.cooldownTicks());
         caster.sendActionBar(Component.text("Chain: Hook: latched onto " + name, NamedTextColor.LIGHT_PURPLE));
         if (plugin.settings().effects()) {
-            hook.world.playSound(hook.head(), Sound.BLOCK_CHAIN_PLACE, 1.0f, 0.7f);
+            playBoth(caster, hook.head(), Sound.BLOCK_CHAIN_PLACE, 1.0f, 0.7f);
         }
+    }
+
+    /**
+     * Chain links clinking every few ticks while the claw flies, softer and
+     * sparser once it holds. Played at the head for bystanders and to the
+     * caster directly, since positional audio alone never reaches them at range.
+     */
+    private static void rattle(Player caster, Hook hook) {
+        if (hook.isAnchored()) {
+            if (hook.age % HOLD_SOUND_INTERVAL == 0) {
+                playBoth(caster, hook.head(), Sound.BLOCK_CHAIN_HIT, 0.35f, 0.8f);
+            }
+        } else if (hook.age % TRAVEL_SOUND_INTERVAL == 0) {
+            playBoth(caster, hook.head(), Sound.BLOCK_CHAIN_STEP, 0.9f, 1.2f);
+        }
+    }
+
+    /** In the world at {@code at}, and again for the caster at their own ears. */
+    static void playBoth(Player caster, Location at, Sound sound, float volume, float pitch) {
+        at.getWorld().playSound(at, sound, volume, pitch);
+        caster.playSound(caster.getLocation(), sound, volume, pitch);
     }
 
     /** Follows an entity anchor, and lets go on expiry, a dead or missing anchor, or too much distance. */

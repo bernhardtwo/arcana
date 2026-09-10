@@ -87,7 +87,10 @@ public final class ChainRendAbility implements Ability {
     private void rendEntity(Player caster, LivingEntity target, ChainRendSettings settings) {
         target.damage(settings.entityDamage(), caster);
         if (plugin.settings().effects()) {
-            spin(target.getLocation().add(0.0, target.getHeight() / 2.0, 0.0));
+            Location center = target.getLocation().add(0.0, target.getHeight() / 2.0, 0.0);
+            ChainHookAbility.playBoth(caster, center, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
+            ChainHookAbility.playBoth(caster, center, Sound.BLOCK_CHAIN_BREAK, 0.8f, 1.3f);
+            spin(center);
         }
         plugin.store().startCooldownWithIndicator(caster, id(), settings.cooldownTicks());
         hooks.release(caster.getUniqueId(), "Chain: Rend: tore into " + target.getName());
@@ -101,7 +104,9 @@ public final class ChainRendAbility implements Ability {
             World world = block.getWorld();
             Location center = block.getLocation().add(0.5, 0.5, 0.5);
             world.spawnParticle(Particle.BLOCK, center, 30, 0.3, 0.3, 0.3, block.getBlockData());
-            world.playSound(center, Sound.BLOCK_CHAIN_BREAK, 1.0f, 0.6f);
+            // The block's own break sound, so it sounds like what it actually broke.
+            ChainHookAbility.playBoth(caster, center, block.getBlockData().getSoundGroup().getBreakSound(), 1.0f, 1.0f);
+            ChainHookAbility.playBoth(caster, center, Sound.BLOCK_CHAIN_BREAK, 0.8f, 0.6f);
             spin(center);
         }
         boolean drops = ThreadLocalRandom.current().nextDouble() < settings.blockDropChance();

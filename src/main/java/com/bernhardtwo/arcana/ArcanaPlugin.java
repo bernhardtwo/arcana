@@ -30,6 +30,7 @@ import com.bernhardtwo.arcana.listener.ChainListener;
 import com.bernhardtwo.arcana.listener.FallDamageListener;
 import com.bernhardtwo.arcana.listener.IceArmorListener;
 import com.bernhardtwo.arcana.listener.IceListener;
+import com.bernhardtwo.arcana.listener.ItemGuardListener;
 import com.bernhardtwo.arcana.listener.ShadowListener;
 import com.bernhardtwo.arcana.listener.SolarListener;
 import org.bukkit.Material;
@@ -112,6 +113,7 @@ public final class ArcanaPlugin extends JavaPlugin {
                 "chain_reel", "chain_rend", "chain_hook"));
 
         getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
+        getServer().getPluginManager().registerEvents(new ItemGuardListener(this), this);
         getServer().getPluginManager().registerEvents(new FallDamageListener(this), this);
         getServer().getPluginManager().registerEvents(new IceListener(this), this);
         getServer().getPluginManager().registerEvents(new IceArmorListener(iceArmor), this);
