@@ -159,5 +159,4 @@ those abilities can be exactly these.
 
 ## License
 
-MIT. If you prefer the conservative route given that the Bukkit and Spigot API
-is GPL-3, change the `LICENSE` file; it is the only thing to touch.
+MIT.
