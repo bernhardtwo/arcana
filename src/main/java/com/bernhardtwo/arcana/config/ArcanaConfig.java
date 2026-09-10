@@ -5,9 +5,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 public final class ArcanaConfig {
 
     private static final GravitySettings PUSH_DEFAULTS =
-            new GravitySettings(6.0, 1.3, 0.45, 2.2, 100, false, true, 120);
+            new GravitySettings(12.0, 2.6, 0.6, 4.0, 100, false, true, 120);
     private static final GravitySettings PULL_DEFAULTS =
-            new GravitySettings(14.0, 1.1, 0.25, 1.8, 140, false, true, 120);
+            new GravitySettings(28.0, 2.2, 0.35, 3.5, 140, false, true, 120);
 
     private final boolean effects;
     private final TargetRules targets;

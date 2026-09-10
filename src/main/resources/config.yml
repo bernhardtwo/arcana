@@ -13,10 +13,10 @@ targets:
 
 abilities:
   gravity_push:
-    radius: 6.0
-    strength: 1.3
-    lift: 0.45
-    max-velocity: 2.2
+    radius: 12.0
+    strength: 2.6
+    lift: 0.6
+    max-velocity: 4.0
     cooldown-ticks: 100
     cancel-fall-damage:
       players: false
@@ -24,10 +24,10 @@ abilities:
     fall-grace-ticks: 120
 
   gravity_pull:
-    radius: 14.0
-    strength: 1.1
-    lift: 0.25
-    max-velocity: 1.8
+    radius: 28.0
+    strength: 2.2
+    lift: 0.35
+    max-velocity: 3.5
     cooldown-ticks: 140
     cancel-fall-damage:
       players: false

@@ -24,6 +24,7 @@ import org.bukkit.util.Vector;
 public final class GravityAbility implements Ability {
 
     private static final double MIN_LENGTH = 1.0E-4;
+    private static final int RING_POINTS = 48;
 
     private final ArcanaPlugin plugin;
     private final GravityMode mode;
@@ -154,7 +155,7 @@ public final class GravityAbility implements Ability {
     private void playEffects(Player caster, GravitySettings settings) {
         World world = caster.getWorld();
         Location origin = caster.getLocation().add(0.0, 1.0, 0.0);
-        double outer = Math.min(settings.radius(), 8.0);
+        double outer = settings.radius();
 
         world.playSound(origin, Sound.ENTITY_EVOKER_CAST_SPELL, 0.9f, mode == GravityMode.PUSH ? 1.4f : 0.7f);
         world.playSound(origin, mode == GravityMode.PUSH ? Sound.ENTITY_GENERIC_EXPLODE : Sound.BLOCK_BEACON_POWER_SELECT,
@@ -180,7 +181,7 @@ public final class GravityAbility implements Ability {
     }
 
     private void drawRing(World world, Location origin, double radius) {
-        int points = Math.max(16, (int) (radius * 10));
+        int points = RING_POINTS;
         Particle particle = mode == GravityMode.PUSH ? Particle.CLOUD : Particle.PORTAL;
         for (int i = 0; i < points; i++) {
             double angle = 2.0 * Math.PI * i / points;
