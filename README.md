@@ -237,6 +237,8 @@ abilities:
     heal-amount: 1.0
     tick-interval: 20
     marker-interval: 10
+    marker-height: 12.0
+    marker-rings: 5
     cooldown-ticks: 18000
 
   solar_bloom:
@@ -279,15 +281,20 @@ others.
 - **Lantern** is a personal light for mining. It grants Night Vision for
   `duration-ticks`, particles hidden and icon visible, and spawns one small
   glowing display that orbits the caster at `orbit-radius`. It modifies no
-  block. Its cooldown is **proportional**: when a lantern ends, for any
-  reason, the cooldown is `cooldown-ticks` times the fraction of the duration
-  that was used. Running the full 20 minutes costs the full 10 minute
-  cooldown; ending after 5 of 20 minutes costs 2.5 minutes. Recasting while
-  your own lantern is up is always allowed: it ends the current instance,
-  charges that instance's proportional cooldown and starts a fresh one. With
-  no lantern up, the normal cooldown check applies. It ends when the duration
-  elapses, on recast, on quit, on death, on world change and on plugin
-  disable, and Night Vision is removed on every one of those paths.
+  block. Its cooldown is **proportional to the lit time**. A lantern session
+  accumulates every tick it has been lit, across recasts, and when the session
+  ends, for any reason, the cooldown is `cooldown-ticks` times
+  `min(1, lit / duration-ticks)`. Running the full 20 minutes costs the full
+  10 minute cooldown; ending after 5 minutes costs 2.5 minutes. Recasting
+  while your own lantern is up is always allowed and refreshes the light back
+  to the full `duration-ticks`, so topping up before a long trip works, but
+  the accumulated time is kept: continuous light is possible, and once 20
+  minutes of lit time have piled up the full cooldown is owed and never goes
+  back down. Every recast shows the bill so far in the action bar. With no
+  lantern up, the normal cooldown check applies. The session ends, and its
+  total is cleared, when the light runs out without a recast, on quit, on
+  death, on world change and on plugin disable, and Night Vision is removed
+  on every one of those paths.
 - **Zenith** is a static sun `height` blocks above the cast point: a large
   glowing display, plus **one** real `LIGHT` block at that position, placed
   only if the block there is air and GriefPrevention lets the caster build
@@ -299,10 +306,14 @@ others.
   players are set on fire only when there is no claim at their location, which
   matches PvP being free only outside claims; the caster, villagers, tamed
   animals and every other non-hostile mob heal `heal-amount`, capped at max
-  health, with heart particles when something was actually healed. An orange
-  particle ring is drawn on the ground at `radius` every `marker-interval`
-  ticks, visible to everyone and capped at 96 points so a big radius cannot
-  flood. The sun has **no time cap**, by design: it ends when the caster
+  health, with heart particles when something was actually healed. The
+  boundary is an orange **wall** of particles at `radius`: `marker-rings`
+  rings stacked over `marker-height` blocks centered on the cast height,
+  refreshed every `marker-interval` ticks, visible to everyone. It is capped
+  at 200 points per refresh, so a big radius gets sparser rings, not more
+  particles, and points inside solid blocks are skipped. The default wall,
+  6 blocks above and below the cast point, is visible in a cave, on open
+  ground and from a distance. The sun has **no time cap**, by design: it ends when the caster
   leaves the radius, and also on quit, death, world change and plugin disable.
   The full cooldown starts when the sun ends, like Ice Armor.
 - **Bloom** applies bone meal to the clicked block, through
@@ -354,8 +365,6 @@ console, and the abilities keep working without claim protection.
   build, tracked on disk so a crash cannot leave it behind. If the server dies
   between placing the block and writing `lights.yml` (microseconds), that one
   block survives until someone breaks it or a zenith is cast there again.
-- The Zenith ring is snapped to the terrain a few blocks around the cast
-  height. On a cliff edge it floats or sinks; it is a marker, not geometry.
 - Dragon breath is an area effect cloud, not a living entity or a projectile,
   so it passes through Ice Armor like environmental damage.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.

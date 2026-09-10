@@ -76,7 +76,7 @@ public final class GravityLeapAbility implements Ability {
         }
     }
 
-    // ponytail: 5-tick sampling can miss a landing shorter than 5 ticks; use PlayerMoveEvent if that matters.
+    // Sampled every 5 ticks, so a landing shorter than that can be missed; PlayerMoveEvent would close that gap.
     public void tick() {
         if (spent.isEmpty()) {
             return;

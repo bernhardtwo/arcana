@@ -43,7 +43,7 @@ import java.util.logging.Level;
 public final class SolarZenithAbility implements Ability {
 
     private static final float SUN_SCALE = 3.0f;
-    private static final int MAX_MARKER_POINTS = 96;
+    private static final int MAX_MARKER_POINTS = 200;
     private static final double MARKER_SPACING = 1.3;
     private static final Particle.DustOptions MARKER = new Particle.DustOptions(Color.ORANGE, 1.6f);
     private static final Particle.DustOptions HEAL_MARK = new Particle.DustOptions(Color.YELLOW, 1.0f);
@@ -134,7 +134,7 @@ public final class SolarZenithAbility implements Ability {
                 affect(caster, sun, settings);
             }
             if (sun.ticks % settings.markerInterval() == 0) {
-                drawRing(sun, settings.radius());
+                drawCylinder(sun, settings);
             }
         }
         for (UUID id : expired) {
@@ -183,26 +183,33 @@ public final class SolarZenithAbility implements Ability {
         }
     }
 
-    /** Orange ring on the ground at the radius, snapped to the terrain, capped so a large radius cannot flood. */
-    private void drawRing(Sun sun, double radius) {
+    /**
+     * Orange wall of particles at the radius: {@code marker-rings} rings spread
+     * over {@code marker-height} blocks centered on the cast height, so the
+     * boundary reads in a cave, on open ground and from afar. The total point
+     * count per refresh is capped; points inside solid blocks are skipped
+     * because they would not render anyway.
+     */
+    private void drawCylinder(Sun sun, SolarZenithSettings settings) {
         World world = sun.center.getWorld();
-        int points = (int) Math.min(MAX_MARKER_POINTS, Math.max(8, Math.round(2.0 * Math.PI * radius / MARKER_SPACING)));
-        for (int i = 0; i < points; i++) {
-            double theta = 2.0 * Math.PI * i / points;
-            int x = (int) Math.floor(sun.center.getX() + Math.cos(theta) * radius);
-            int z = (int) Math.floor(sun.center.getZ() + Math.sin(theta) * radius);
-            world.spawnParticle(Particle.DUST, x + 0.5, groundAt(world, x, sun.groundY, z) + 0.2, z + 0.5, 1, 0.0, 0.0, 0.0, 0.0, MARKER);
-        }
-    }
-
-    // ponytail: a short scan around the cast height; on a cliff the ring floats or sinks, good enough for a marker.
-    private static double groundAt(World world, int x, int aroundY, int z) {
-        for (int y = aroundY + 2; y >= aroundY - 6; y--) {
-            if (!world.getBlockAt(x, y, z).isPassable()) {
-                return y + 1;
+        int rings = settings.markerRings();
+        int wanted = (int) Math.round(2.0 * Math.PI * settings.radius() / MARKER_SPACING);
+        int points = Math.max(8, Math.min(wanted, MAX_MARKER_POINTS / rings));
+        double bottom = sun.groundY + 0.5 - settings.markerHeight() / 2.0;
+        double step = rings == 1 ? 0.0 : settings.markerHeight() / (rings - 1);
+        for (int ring = 0; ring < rings; ring++) {
+            double y = bottom + ring * step;
+            // Alternate rings are offset by half a step so the wall has no empty vertical columns.
+            double phase = ring % 2 == 0 ? 0.0 : Math.PI / points;
+            for (int i = 0; i < points; i++) {
+                double theta = phase + 2.0 * Math.PI * i / points;
+                double x = sun.center.getX() + Math.cos(theta) * settings.radius();
+                double z = sun.center.getZ() + Math.sin(theta) * settings.radius();
+                if (world.getBlockAt((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z)).isPassable()) {
+                    world.spawnParticle(Particle.DUST, x, y, z, 1, 0.0, 0.0, 0.0, 0.0, MARKER);
+                }
             }
         }
-        return aroundY;
     }
 
     /** Ends the sun for any reason: removes the display and the light block, then starts the full cooldown. */

@@ -22,7 +22,7 @@ public final class ArcanaConfig {
             new IceArmorSettings(3, 1.2, 1.0, 0.12, 15, 1200, false,
                     EnumSet.of(EntityType.WARDEN, EntityType.ENDER_DRAGON, EntityType.WITHER, EntityType.GHAST));
     private static final SolarLanternSettings LANTERN_DEFAULTS = new SolarLanternSettings(24000, 12000, 0.9);
-    private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 18000);
+    private static final SolarZenithSettings ZENITH_DEFAULTS = new SolarZenithSettings(6, 20.0, 60, 1.0, 20, 10, 12.0, 5, 18000);
     private static final SolarBloomSettings BLOOM_DEFAULTS = new SolarBloomSettings(5, 12);
 
     private final boolean effects;

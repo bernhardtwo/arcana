@@ -9,6 +9,8 @@ public record SolarZenithSettings(
         double healAmount,
         int tickInterval,
         int markerInterval,
+        double markerHeight,
+        int markerRings,
         int cooldownTicks
 ) {
 
@@ -23,6 +25,8 @@ public record SolarZenithSettings(
                 section.getDouble("heal-amount", fallback.healAmount()),
                 Math.max(1, section.getInt("tick-interval", fallback.tickInterval())),
                 Math.max(1, section.getInt("marker-interval", fallback.markerInterval())),
+                Math.max(0.0, section.getDouble("marker-height", fallback.markerHeight())),
+                Math.max(1, section.getInt("marker-rings", fallback.markerRings())),
                 section.getInt("cooldown-ticks", fallback.cooldownTicks())
         );
     }

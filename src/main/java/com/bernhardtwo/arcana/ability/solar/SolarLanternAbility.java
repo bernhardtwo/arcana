@@ -23,9 +23,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Night vision plus one orbiting light. Ends on duration, recast, quit, death,
- * world change and plugin disable, always through {@link #end(UUID, String)},
- * which charges a cooldown proportional to the time actually used.
+ * Night vision plus one orbiting light. A recast refreshes the light to the
+ * full duration but keeps the session's accumulated lit time, so continuous
+ * light is possible and the bill only grows. The session ends on the light
+ * running out, quit, death, world change and plugin disable, always through
+ * {@link #end(UUID, String)}, which charges a cooldown proportional to the
+ * total lit time, capped at the full cooldown.
  */
 public final class SolarLanternAbility implements Ability {
 
@@ -38,9 +41,14 @@ public final class SolarLanternAbility implements Ability {
 
     private static final class Lantern {
         private BlockDisplay orb;
-        private long startMillis;
+        private long litSinceMillis;
+        private long consumedMillis;
         private int durationTicks;
         private double angle;
+
+        private long totalMillis(long now) {
+            return consumedMillis + (now - litSinceMillis);
+        }
     }
 
     public SolarLanternAbility(ArcanaPlugin plugin) {
@@ -74,18 +82,28 @@ public final class SolarLanternAbility implements Ability {
 
     @Override
     public void cast(Player caster) {
-        // A recast pays for the instance it replaces, then starts clean.
-        end(caster.getUniqueId(), null);
-
         SolarLanternSettings settings = settings();
-        Lantern lantern = new Lantern();
-        lantern.startMillis = System.currentTimeMillis();
-        lantern.durationTicks = settings.durationTicks();
-        lantern.orb = Displays.spawn(plugin, orbitPoint(caster, lantern, settings), Material.LANTERN, ORB_SCALE);
-        active.put(caster.getUniqueId(), lantern);
+        long now = System.currentTimeMillis();
+        Lantern lantern = active.get(caster.getUniqueId());
+        if (lantern != null) {
+            // Recast: bank the time lit so far, restart the light, and show the bill so it never surprises.
+            lantern.consumedMillis += now - lantern.litSinceMillis;
+            lantern.litSinceMillis = now;
+            lantern.durationTicks = settings.durationTicks();
+        } else {
+            lantern = new Lantern();
+            lantern.litSinceMillis = now;
+            lantern.durationTicks = settings.durationTicks();
+            lantern.orb = Displays.spawn(plugin, orbitPoint(caster, lantern, settings), Material.LANTERN, ORB_SCALE);
+            active.put(caster.getUniqueId(), lantern);
+        }
 
         caster.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, settings.durationTicks(), 0,
                 false, false, true));
+        if (lantern.consumedMillis > 0L) {
+            caster.sendActionBar(Component.text("Solar: Lantern refreshed, cooldown now "
+                    + format(cooldownFor(lantern, now)), NamedTextColor.GOLD));
+        }
 
         if (plugin.settings().effects()) {
             caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.7f, 1.6f);
@@ -104,7 +122,7 @@ public final class SolarLanternAbility implements Ability {
         for (Map.Entry<UUID, Lantern> entry : active.entrySet()) {
             Player player = Bukkit.getPlayer(entry.getKey());
             Lantern lantern = entry.getValue();
-            if (player == null || now - lantern.startMillis >= lantern.durationTicks * 50L) {
+            if (player == null || now - lantern.litSinceMillis >= lantern.durationTicks * 50L) {
                 expired.add(entry.getKey());
                 continue;
             }
@@ -116,7 +134,7 @@ public final class SolarLanternAbility implements Ability {
         }
     }
 
-    /** Ends the lantern for any reason. The cooldown is cooldown-ticks scaled by the fraction of the duration used. */
+    /** Ends the session for any reason. The cooldown is cooldown-ticks scaled by the total lit time over the duration. */
     public void end(UUID player, String message) {
         Lantern lantern = active.remove(player);
         if (lantern == null) {
@@ -128,8 +146,7 @@ public final class SolarLanternAbility implements Ability {
             return;
         }
         online.removePotionEffect(PotionEffectType.NIGHT_VISION);
-        double consumed = Math.min(1.0, (System.currentTimeMillis() - lantern.startMillis) / (lantern.durationTicks * 50.0));
-        int cooldown = (int) Math.round(cooldownTicks() * consumed);
+        int cooldown = cooldownFor(lantern, System.currentTimeMillis());
         if (cooldown > 0) {
             plugin.store().startCooldown(online, id(), cooldown);
         }
@@ -143,6 +160,16 @@ public final class SolarLanternAbility implements Ability {
         for (UUID id : new ArrayList<>(active.keySet())) {
             end(id, null);
         }
+    }
+
+    private int cooldownFor(Lantern lantern, long now) {
+        double consumed = Math.min(1.0, lantern.totalMillis(now) / (lantern.durationTicks * 50.0));
+        return (int) Math.round(cooldownTicks() * consumed);
+    }
+
+    private static String format(int ticks) {
+        long seconds = ticks / 20L;
+        return seconds >= 60L ? seconds / 60L + "m " + seconds % 60L + "s" : seconds + "s";
     }
 
     private static Location orbitPoint(Player player, Lantern lantern, SolarLanternSettings settings) {
