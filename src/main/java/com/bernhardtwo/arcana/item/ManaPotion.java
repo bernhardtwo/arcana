@@ -4,7 +4,6 @@ import com.bernhardtwo.arcana.ArcanaPlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -47,27 +46,15 @@ public final class ManaPotion {
                 && ID.equals(stack.getItemMeta().getPersistentDataContainer().get(plugin.itemKey(), PersistentDataType.STRING));
     }
 
-    /**
-     * Registers or removes the optional recipe to match the config: one glass
-     * bottle, two lapis lazuli and one glowstone dust, shapeless. Re-registered
-     * on every reload so the result carries the current restore amount.
-     */
+    /** Optional recipe: one glass bottle, two lapis lazuli and one glowstone dust, shapeless. */
     public static void syncRecipe(ArcanaPlugin plugin) {
         NamespacedKey key = new NamespacedKey(plugin, ID);
-        boolean had = Bukkit.getRecipe(key) != null;
-        if (had) {
-            Bukkit.removeRecipe(key);
-        }
-        boolean want = plugin.settings().mana().recipeEnabled();
-        if (want) {
+        AbilityItems.syncRecipe(key, plugin.settings().mana().recipeEnabled(), () -> {
             ShapelessRecipe recipe = new ShapelessRecipe(key, create(plugin, 1));
             recipe.addIngredient(Material.GLASS_BOTTLE);
             recipe.addIngredient(2, Material.LAPIS_LAZULI);
             recipe.addIngredient(Material.GLOWSTONE_DUST);
-            Bukkit.addRecipe(recipe);
-        }
-        if (had != want) {
-            Bukkit.updateRecipes();
-        }
+            return recipe;
+        });
     }
 }

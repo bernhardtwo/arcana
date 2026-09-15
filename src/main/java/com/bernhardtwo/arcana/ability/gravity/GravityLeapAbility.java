@@ -45,9 +45,11 @@ public final class GravityLeapAbility implements Ability {
         return plugin.settings().leap().cooldownTicks();
     }
 
+    /** Never while the Levitation Boots fly the caster: a jump means nothing there and would only spend mana. */
     @Override
     public boolean canCast(Player caster) {
-        return !caster.isOnGround() && !spent.contains(caster.getUniqueId());
+        return !caster.isOnGround() && !spent.contains(caster.getUniqueId())
+                && !plugin.gravityBoots().isFlying(caster.getUniqueId());
     }
 
     @Override

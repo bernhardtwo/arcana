@@ -12,9 +12,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * One boss bar per player, shown only while a wand is in either hand and the
- * mana bridge is active. Refreshed by one task every 10 ticks over the online
- * players, and on the spot when the held item changes.
+ * One boss bar per player, shown while a wand is in either hand or the
+ * Levitation Boots are flying, and only with the mana bridge active. Refreshed
+ * by one task every 10 ticks over the online players, and on the spot when the
+ * held item or the flight changes.
  */
 public final class ManaBar {
 
@@ -33,7 +34,9 @@ public final class ManaBar {
 
     /** Shows, updates or hides the bar for this player right now. */
     public void refresh(Player player) {
-        boolean holding = AbilityItems.wandOf(plugin, player.getInventory().getItemInMainHand()).isPresent()
+        String flight = plugin.gravityBoots().status(player.getUniqueId());
+        boolean holding = flight != null
+                || AbilityItems.wandOf(plugin, player.getInventory().getItemInMainHand()).isPresent()
                 || AbilityItems.wandOf(plugin, player.getInventory().getItemInOffHand()).isPresent();
         double max = holding ? plugin.mana().maxMana(player) : 0.0;
         if (!plugin.mana().isActive() || !plugin.settings().mana().bar() || max <= 0.0) {
@@ -47,7 +50,8 @@ public final class ManaBar {
             return created;
         });
         bar.progress((float) Math.min(1.0, Math.max(0.0, mana / max)));
-        bar.name(Component.text(String.format("Mana %.0f / %.0f", mana, max)));
+        String title = String.format("Mana %.0f / %.0f", mana, max);
+        bar.name(Component.text(flight == null ? title : title + "  |  " + flight));
     }
 
     public void hide(Player player) {

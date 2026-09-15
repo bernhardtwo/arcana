@@ -168,3 +168,17 @@ abilities:
       - REINFORCED_DEEPSLATE
     cooldown-ticks: 100
     mana-cost: 0
+
+  # Levitation Boots. Not a mana-cost: the ladder limits itself, so the
+  # pool-size correction applied to cast costs does not apply here.
+  gravity_boots:
+    mana-per-second-base: 1.0
+    mana-per-second-step: 1.0
+    step-interval-seconds: 5
+    max-step: 0
+    decay-interval-seconds: 5
+    tick-period: 10
+    fly-speed: 0.05
+    grace-slow-falling-seconds: 10
+    respect-claims: false
+    recipe-enabled: false

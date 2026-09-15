@@ -3,6 +3,7 @@ package com.bernhardtwo.arcana.command;
 import com.bernhardtwo.arcana.ArcanaPlugin;
 import com.bernhardtwo.arcana.ability.PlayerStore;
 import com.bernhardtwo.arcana.item.AbilityItems;
+import com.bernhardtwo.arcana.item.LevitationBoots;
 import com.bernhardtwo.arcana.item.ManaPotion;
 import com.bernhardtwo.arcana.item.Wand;
 import net.kyori.adventure.text.Component;
@@ -49,7 +50,7 @@ public final class ArcanaCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    /** /arcana give <player> <id> [amount]: any registered Arcana item, wands and potions alike. */
+    /** /arcana give <player> <id> [amount]: any registered Arcana item, wands, potions and boots alike. */
     private void give(CommandSender sender, String[] args) {
         if (args.length < 3) {
             sender.sendMessage(warn("Usage: /arcana give <player> <id> [amount]"));
@@ -146,6 +147,7 @@ public final class ArcanaCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Component.text("  " + wand.id() + " - " + wand.displayName(), NamedTextColor.GRAY));
         }
         sender.sendMessage(Component.text("  " + ManaPotion.ID + " - Mana Potion", NamedTextColor.GRAY));
+        sender.sendMessage(Component.text("  " + LevitationBoots.ID + " - Levitation Boots", NamedTextColor.GRAY));
         sender.sendMessage(info("GriefPrevention claims: " + (plugin.claims().isActive() ? "active" : "not detected")));
         sender.sendMessage(info("CoreProtect logging: " + (plugin.coreProtect().isActive() ? "active" : "not detected")));
         sender.sendMessage(info("AuraSkills mana: " + (plugin.mana().isActive() ? "active" : "not detected")));

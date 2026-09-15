@@ -63,3 +63,6 @@ permissions:
   arcana.use.chain_rend:
     description: "Allows casting Chain: Rend."
     default: true
+  arcana.use.gravity_boots:
+    description: "Allows flying with the Levitation Boots."
+    default: true

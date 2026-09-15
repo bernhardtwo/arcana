@@ -5,25 +5,29 @@ import com.bernhardtwo.arcana.ability.Ability;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public final class AbilityItems {
 
     private AbilityItems() {
     }
 
-    /** Every id the give command accepts: the wands and the potion. */
+    /** Every id the give command accepts: the wands, the potion and the boots. */
     public static List<String> ids(ArcanaPlugin plugin) {
         List<String> ids = new ArrayList<>();
         plugin.wands().all().forEach(wand -> ids.add(wand.id()));
         ids.add(ManaPotion.ID);
+        ids.add(LevitationBoots.ID);
         return ids;
     }
 
@@ -31,6 +35,9 @@ public final class AbilityItems {
     public static Optional<ItemStack> create(ArcanaPlugin plugin, String id, int amount) {
         if (ManaPotion.ID.equals(id)) {
             return Optional.of(ManaPotion.create(plugin, amount));
+        }
+        if (LevitationBoots.ID.equals(id)) {
+            return Optional.of(LevitationBoots.create(plugin, amount));
         }
         return plugin.wands().find(id).map(wand -> {
             ItemStack stack = create(plugin, wand);
@@ -86,6 +93,23 @@ public final class AbilityItems {
             return Optional.empty();
         }
         return plugin.wands().find(id);
+    }
+
+    /**
+     * Registers or removes an optional recipe to match the config. Re-registered
+     * on every reload so the result carries the current item.
+     */
+    public static void syncRecipe(NamespacedKey key, boolean enabled, Supplier<Recipe> recipe) {
+        boolean had = Bukkit.getRecipe(key) != null;
+        if (had) {
+            Bukkit.removeRecipe(key);
+        }
+        if (enabled) {
+            Bukkit.addRecipe(recipe.get());
+        }
+        if (had != enabled) {
+            Bukkit.updateRecipes();
+        }
     }
 
     private static void addSlot(List<Component> lore, ArcanaPlugin plugin, String label, String abilityId) {

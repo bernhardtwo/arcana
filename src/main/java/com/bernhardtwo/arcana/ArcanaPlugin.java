@@ -7,6 +7,7 @@ import com.bernhardtwo.arcana.ability.chain.ChainHookAbility;
 import com.bernhardtwo.arcana.ability.chain.ChainReelAbility;
 import com.bernhardtwo.arcana.ability.chain.ChainRendAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityAbility;
+import com.bernhardtwo.arcana.ability.gravity.GravityBoots;
 import com.bernhardtwo.arcana.ability.gravity.GravityLeapAbility;
 import com.bernhardtwo.arcana.ability.gravity.GravityMode;
 import com.bernhardtwo.arcana.ability.ice.Frost;
@@ -24,6 +25,7 @@ import com.bernhardtwo.arcana.config.ArcanaConfig;
 import com.bernhardtwo.arcana.integration.ClaimGuard;
 import com.bernhardtwo.arcana.integration.CoreProtectLog;
 import com.bernhardtwo.arcana.integration.ManaBridge;
+import com.bernhardtwo.arcana.item.LevitationBoots;
 import com.bernhardtwo.arcana.item.ManaPotion;
 import com.bernhardtwo.arcana.item.Wand;
 import com.bernhardtwo.arcana.item.WandRegistry;
@@ -31,6 +33,7 @@ import com.bernhardtwo.arcana.listener.AbilityUseListener;
 import com.bernhardtwo.arcana.listener.ChainListener;
 import com.bernhardtwo.arcana.listener.DroppedItemListener;
 import com.bernhardtwo.arcana.listener.FallDamageListener;
+import com.bernhardtwo.arcana.listener.GravityBootsListener;
 import com.bernhardtwo.arcana.listener.IceArmorListener;
 import com.bernhardtwo.arcana.listener.IceListener;
 import com.bernhardtwo.arcana.listener.ItemGuardListener;
@@ -68,6 +71,7 @@ public final class ArcanaPlugin extends JavaPlugin {
     private ShadowBodyAbility shadowBody;
     private ShadowSwapAbility shadowSwap;
     private ChainHookAbility chainHook;
+    private GravityBoots gravityBoots;
 
     @Override
     public void onEnable() {
@@ -110,6 +114,8 @@ public final class ArcanaPlugin extends JavaPlugin {
         abilities.register(new ChainReelAbility(this, chainHook));
         abilities.register(new ChainRendAbility(this, chainHook));
         solarZenith.removeOrphanLights();
+        gravityBoots = new GravityBoots(this);
+        gravityBoots.sweep();
 
         wands = new WandRegistry();
         wands.register(new Wand("gravity", "Gravity Staff", Material.BLAZE_ROD,
@@ -133,6 +139,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SolarListener(solarLantern, solarZenith), this);
         getServer().getPluginManager().registerEvents(new ShadowListener(this, shadowBody, shadowSwap), this);
         getServer().getPluginManager().registerEvents(new ChainListener(chainHook), this);
+        getServer().getPluginManager().registerEvents(new GravityBootsListener(this, gravityBoots), this);
 
         PluginCommand command = getCommand("arcana");
         if (command != null) {
@@ -147,8 +154,10 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, solarLantern::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, solarZenith::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, chainHook::tick, 1L, 1L);
+        getServer().getScheduler().runTaskTimer(this, gravityBoots::tick, 1L, 1L);
         getServer().getScheduler().runTaskTimer(this, manaBar::tick, 10L, 10L);
         ManaPotion.syncRecipe(this);
+        LevitationBoots.syncRecipe(this);
         getLogger().info("Arcana enabled with " + abilities.all().size() + " abilities.");
     }
 
@@ -172,6 +181,9 @@ public final class ArcanaPlugin extends JavaPlugin {
         if (chainHook != null) {
             chainHook.endAll();
         }
+        if (gravityBoots != null) {
+            gravityBoots.endAll();
+        }
         if (manaBar != null) {
             manaBar.hideAll();
         }
@@ -181,6 +193,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         reloadConfig();
         settings = ArcanaConfig.load(getConfig(), getLogger());
         ManaPotion.syncRecipe(this);
+        LevitationBoots.syncRecipe(this);
     }
 
     /** Defensive insurance: our displays are non-persistent, but sweep loaded worlds anyway. */
@@ -254,5 +267,9 @@ public final class ArcanaPlugin extends JavaPlugin {
 
     public ManaBar manaBar() {
         return manaBar;
+    }
+
+    public GravityBoots gravityBoots() {
+        return gravityBoots;
     }
 }

@@ -3,7 +3,7 @@
 Item-bound magic abilities for Paper servers. A staff in hand, right click,
 and something happens around you.
 
-Five staffs so far.
+Five staffs and a pair of boots so far.
 
 **Gravity Staff** (blaze rod)
 
@@ -45,6 +45,12 @@ Five staffs so far.
 | Chain: Reel | Right click | Pulls along the chain: you toward a block, a creature toward you |
 | Chain: Rend | Sneak + right click | The claw spins at the anchor: damage on a creature, a break on a block |
 
+**Levitation Boots** (chainmail boots)
+
+| Ability | How to cast | What it does |
+|---|---|---|
+| Levitation | Wear them, double tap jump | Sustained flight that costs mana, more the longer you stay up; double tap again to land |
+
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
 
@@ -83,7 +89,7 @@ port 25566 for testing without touching production.
 All under the `arcana.admin` permission (op only by default).
 
 ```
-/arcana give <player> <id> [amount]   hands out a staff or a mana potion
+/arcana give <player> <id> [amount]   hands out a staff, a mana potion or the boots
 /arcana list                          registered items and the GriefPrevention, CoreProtect and AuraSkills status
 /arcana reload                  re-reads config.yml without a restart
 /arcana reset [player]          clears every cooldown and refills every charge pool
@@ -96,7 +102,7 @@ removed, `Cleared 4 cooldowns and refilled 1 charge pool for vegabernh`, and
 never errors on a player who has none. It exists for balancing: without it
 the only way to skip a 15 minute cooldown is deleting the playerdata file.
 
-Registered items: the staffs `gravity`, `ice`, `solar`, `shadow` and `chain`, and `mana_potion`.
+Registered items: the staffs `gravity`, `ice`, `solar`, `shadow` and `chain`, `mana_potion` and `gravity_boots`.
 
 ## Permissions
 
@@ -118,6 +124,7 @@ Registered items: the staffs `gravity`, `ice`, `solar`, `shadow` and `chain`, an
 | `arcana.use.chain_hook` | true | Cast Hook |
 | `arcana.use.chain_reel` | true | Cast Reel |
 | `arcana.use.chain_rend` | true | Cast Rend |
+| `arcana.use.gravity_boots` | true | Fly with the Levitation Boots |
 
 The `arcana.use.*` nodes are checked on every cast, so they can be handed out
 per rank from LuckPerms without touching the plugin.
@@ -363,6 +370,18 @@ abilities:
       - REINFORCED_DEEPSLATE
     cooldown-ticks: 100
     mana-cost: 0
+
+  gravity_boots:
+    mana-per-second-base: 1.0
+    mana-per-second-step: 1.0
+    step-interval-seconds: 5
+    max-step: 0
+    decay-interval-seconds: 5
+    tick-period: 10
+    fly-speed: 0.05
+    grace-slow-falling-seconds: 10
+    respect-claims: false
+    recipe-enabled: false
 ```
 
 Notes on decisions that are not obvious:
@@ -419,6 +438,11 @@ Notes on decisions that are not obvious:
   and ancient debris (30). `blocked-materials` takes Bukkit `Material`
   names; unknown names are logged and skipped. `block-drop-chance` is
   clamped to 0..1.
+- `gravity_boots` has no `mana-cost` and no `cooldown-ticks`. Its mana keys
+  are separate from the cast costs on purpose: the ladder limits itself, so
+  a server that doubles every `mana-cost` for a bigger pool should leave
+  these alone. `fly-speed` is Bukkit's scale, where vanilla creative flight
+  is 0.1. `max-step: 0` means the ladder never stops climbing.
 
 ## How the sun works
 
@@ -596,6 +620,72 @@ has a lockout group.
   restores it; without that, blocks removed by a plugin leave no trace. Rend
   releases the hook after use.
 
+## How the boots work
+
+The Levitation Boots are the first armor item and the first ability that
+charges mana continuously instead of per cast. Nothing is cast: the boots
+are worn, and the double tap that toggles creative flight is the switch.
+
+- **Armed.** While the boots sit in the boots slot of a player in survival
+  or adventure with the permission, the plugin switches `allowFlight` on so
+  the client sends the double tap at all. Creative and spectator are never
+  touched. What the player had before, `allowFlight` and `flySpeed`, is
+  written to their data container the moment it is granted and put back
+  from there on every path that takes the boots out of play: taking them
+  off, quit, death, a gamemode change and plugin disable. That is what keeps
+  an Essentials `/fly` alive: an admin with flight on who wears the boots
+  and takes them off again still has flight on afterwards. The grant is
+  also the crash guard. `allowFlight` is saved in the player file, so a
+  server that dies with someone flying would otherwise hand them creative
+  flight for free on the next login. A grant still present when a player
+  joins, or when the plugin enables with players online, means the last
+  session ended without a clean disarm, and the previous values are
+  restored before anything else sees the player. The console logs it.
+- **Flying.** The double tap turns flight on, with the checks in the usual
+  order: permission, then elytra (never while gliding), then the claim when
+  `respect-claims` is on, then mana for the first charge. Each refusal
+  cancels the toggle so the client lands again. While flying, every
+  `tick-period` ticks the boots charge `mana-per-second` scaled to the
+  period, where `mana-per-second` is `mana-per-second-base` plus
+  `mana-per-second-step` times the **ladder step**, the accumulated flight
+  seconds divided by `step-interval-seconds`, rounded down and capped by
+  `max-step` when it is not 0. With the defaults that is 1 mana per second
+  for the first five seconds, 2 for the next five, 3 for the next, and so
+  on. A double tap, or touching the ground, turns it off. Fly speed is set
+  to `fly-speed` while flying and put back afterwards.
+- **The counter is persistent and decays.** The accumulated seconds live in
+  the player's data container, written every charge, and with the flight
+  off they lose one step every `decay-interval-seconds`. They are never
+  reset by landing, by toggling or by a relog. Without the decay, switching
+  the flight off and on every few seconds would fly at the base cost
+  forever and the ladder would limit nothing; with it, resting for ten
+  seconds is worth two steps, and resting for one second is worth nothing.
+- **Out of mana** ends the flight at once, applies Slow Falling for
+  `grace-slow-falling-seconds` and says so. Taking the boots off in the air
+  does the same, immediately. The grace is 10 seconds because Slow Falling
+  starts from rest and only approaches its 9.8 m/s after a few seconds:
+  measured on the dev server, 6 seconds of it cover about 37 blocks from a
+  hover and 10 seconds cover a 60 block drop with the effect still on at
+  the ground. The flight also ends on quit, death, world
+  change, gamemode change and plugin disable, and if another plugin sets
+  the player to not flying without an event, the next charge notices and
+  ends it too.
+- **Feedback.** While flying, the mana bar is shown even with no staff in
+  hand, with the current step and cost per second in the title, and a
+  chime marks each step up. Without AuraSkills the flight is free, like
+  every other cost.
+- The boots are tagged like the potion, so the item guard and the dropped
+  item protection cover them, and they are unbreakable: armor wears out on
+  every hit, and a magic item that quietly breaks after a few fights would
+  just be lost. There is an optional recipe, off by default like the
+  potion's: chainmail boots, a feather and two phantom membranes,
+  shapeless, under `gravity_boots.recipe-enabled`.
+- Gravity: Leap and the boots share nothing. Leap is a left click with the
+  Gravity Staff while airborne and never touches `allowFlight` or the
+  flight toggle, so the two coexist. The one rule is that Leap refuses,
+  silently, while the boots are flying the caster: a jump means nothing in
+  flight and would only spend mana.
+
 ## Item protection
 
 Every staff is a vanilla item with vanilla uses: an end rod or a chain
@@ -646,9 +736,10 @@ fizzle already has its own penalty. The defaults are tuned against a pool of
 roughly 40 to 60. The Chainshot costs 0 **on purpose**, it is a tool and not
 magic, but the keys exist so another server can charge for it.
 
-**Mana bar.** A boss bar shown only while an Arcana wand is in either hand,
-hidden the moment the player switches away, with the current and maximum
-mana in the title. One task refreshes it every 10 ticks for every online
+**Mana bar.** A boss bar shown while an Arcana wand is in either hand or the
+Levitation Boots are flying, hidden the moment neither is true, with the
+current and maximum mana in the title, plus the ladder step and cost per
+second while flying. One task refreshes it every 10 ticks for every online
 player, and a hand change refreshes it on the spot. Never shown when the
 bridge is inactive; `mana.bar: false` turns it off for servers that already
 display mana elsewhere. It is removed on quit, world change and plugin
@@ -734,6 +825,24 @@ active, next to the GriefPrevention line.
   block survives until someone breaks it or a zenith is cast there again.
 - Dragon breath is an area effect cloud, not a living entity or a projectile,
   so it passes through Ice Armor like environmental damage.
+- Wearing the Levitation Boots means `allowFlight` is on, and vanilla never
+  applies fall damage to a player with `allowFlight` on, flying or not
+  (`Player#causeFallDamage` returns early on `mayfly`). So the boots also
+  cushion every fall while worn, the same way an Essentials `/fly` does,
+  and the Slow Falling grace only matters once they come off. Measured: a
+  15 block drop with the boots on and no flight does no damage; the same
+  drop without them does 12. Charging fall damage by hand for armed
+  players is possible but is a separate decision.
+- With the Levitation Boots on, the vanilla double tap is live: a player who
+  spams jump in the air will start flying by accident and pay the first
+  charge. That is the cost of using the vanilla toggle instead of a key the
+  client does not have.
+- The boots capture the previous `allowFlight` when they arm. A plugin that
+  turns flight on for a player some ticks after they join, as Essentials can
+  with `/fly` persisted, may do so after the boots armed with "off" as the
+  previous value, and taking the boots off would then turn that flight off.
+  Running `/fly` again fixes it. `/arcana reset` does not touch the ladder
+  counter; it decays by itself within seconds.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.
   Without an anticheat there is no problem. The day Grim comes in, those ticks
   will need an exemption.
@@ -767,6 +876,11 @@ The structure is already laid out for more than one ability:
   through `PlayerStore`, the same container the cooldowns live in.
 - Items are identified by `PersistentDataContainer`, never by name or lore, so
   renaming a stick in an anvil forges nothing.
+- Not everything is a cast. The Levitation Boots are worn, not wielded,
+  and are driven by events: `GravityBoots` holds the flight state and
+  `GravityBootsListener` feeds it. An item that is not a wand is tagged
+  with `itemKey`, like the potion, and registered in `AbilityItems` for the
+  give command.
 - `Ability#cast` returns whether the ability actually executed. False means
   it refused, dismissed or cancelled, and the caller then starts no cooldown
   and spends no mana. Any new refusal path should return false.

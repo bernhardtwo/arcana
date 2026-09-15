@@ -89,6 +89,69 @@ public final class PlayerStore {
         return new Cleared(cooldown, charges);
     }
 
+    // ----- flight granted by the Levitation Boots -----
+
+    /** What the player had before Arcana switched allowFlight on, so it can be put back exactly. */
+    public record FlightGrant(boolean allowFlight, float flySpeed) {
+    }
+
+    /** True while the keys are present: Arcana granted this player's allowFlight and has not restored it yet. */
+    public boolean hasFlightGrant(Player player) {
+        return player.getPersistentDataContainer().has(flightAllowKey(), PersistentDataType.BYTE);
+    }
+
+    /** Write-through, like a cooldown: a crash after this point is recoverable on the next join. */
+    public void grantFlight(Player player, FlightGrant previous) {
+        PersistentDataContainer data = player.getPersistentDataContainer();
+        data.set(flightAllowKey(), PersistentDataType.BYTE, (byte) (previous.allowFlight() ? 1 : 0));
+        data.set(flightSpeedKey(), PersistentDataType.FLOAT, previous.flySpeed());
+    }
+
+    /** The grant, or null when there is none. */
+    public FlightGrant flightGrant(Player player) {
+        PersistentDataContainer data = player.getPersistentDataContainer();
+        Byte allow = data.get(flightAllowKey(), PersistentDataType.BYTE);
+        if (allow == null) {
+            return null;
+        }
+        Float speed = data.get(flightSpeedKey(), PersistentDataType.FLOAT);
+        return new FlightGrant(allow != 0, speed == null ? 0.1f : speed);
+    }
+
+    /** Removes the grant and returns what to restore, or null when there was none. */
+    public FlightGrant revokeFlight(Player player) {
+        FlightGrant grant = flightGrant(player);
+        if (grant != null) {
+            PersistentDataContainer data = player.getPersistentDataContainer();
+            data.remove(flightAllowKey());
+            data.remove(flightSpeedKey());
+        }
+        return grant;
+    }
+
+    /**
+     * Accumulated flight seconds after lazy decay: one step of
+     * {@code stepSeconds} is lost for every whole {@code decayMillis} elapsed
+     * since the last write. Never resets on its own; only decays to 0.
+     */
+    public double flightSeconds(Player player, double stepSeconds, long decayMillis) {
+        PersistentDataContainer data = player.getPersistentDataContainer();
+        Double seconds = data.get(flightSecondsKey(), PersistentDataType.DOUBLE);
+        Long at = data.get(flightAtKey(), PersistentDataType.LONG);
+        if (seconds == null || at == null) {
+            return 0.0;
+        }
+        long lost = (System.currentTimeMillis() - at) / decayMillis;
+        return lost <= 0L ? seconds : Math.max(0.0, seconds - lost * stepSeconds);
+    }
+
+    /** Write-through with the wall clock, so decay is measured from the last moment the boots were charging. */
+    public void writeFlightSeconds(Player player, double seconds) {
+        PersistentDataContainer data = player.getPersistentDataContainer();
+        data.set(flightSecondsKey(), PersistentDataType.DOUBLE, seconds);
+        data.set(flightAtKey(), PersistentDataType.LONG, System.currentTimeMillis());
+    }
+
     private record Pool(int count, long lastRegen) {
     }
 
@@ -124,5 +187,21 @@ public final class PlayerStore {
 
     private NamespacedKey regenKey(String abilityId) {
         return new NamespacedKey(plugin, "charges." + abilityId + ".at");
+    }
+
+    private NamespacedKey flightAllowKey() {
+        return new NamespacedKey(plugin, "flight.allow");
+    }
+
+    private NamespacedKey flightSpeedKey() {
+        return new NamespacedKey(plugin, "flight.speed");
+    }
+
+    private NamespacedKey flightSecondsKey() {
+        return new NamespacedKey(plugin, "flight.seconds");
+    }
+
+    private NamespacedKey flightAtKey() {
+        return new NamespacedKey(plugin, "flight.at");
     }
 }

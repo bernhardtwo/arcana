@@ -42,6 +42,9 @@ public final class ArcanaConfig {
             Map.entry("chain_hook", 0.0), Map.entry("chain_reel", 0.0), Map.entry("chain_rend", 0.0));
     private static final ChainHookSettings HOOK_DEFAULTS = new ChainHookSettings(24.0, 1.6, 200, 40);
     private static final ChainReelSettings REEL_DEFAULTS = new ChainReelSettings(1.2, 1.1, 2.5, 100, 60);
+    /** 1/s for the first five seconds, 2/s for the next five, and so on, decaying one step per five idle seconds. */
+    private static final GravityBootsSettings BOOTS_DEFAULTS =
+            new GravityBootsSettings(1.0, 1.0, 5, 0, 5, 10, 0.05f, 10, false, false);
     private static final ChainRendSettings REND_DEFAULTS = new ChainRendSettings(6.0, 0.5, 5.0,
             EnumSet.of(Material.BEDROCK, Material.BARRIER, Material.SPAWNER, Material.END_PORTAL_FRAME,
                     Material.REINFORCED_DEEPSLATE), 100);
@@ -66,6 +69,7 @@ public final class ArcanaConfig {
     private final ChainHookSettings chainHook;
     private final ChainReelSettings chainReel;
     private final ChainRendSettings chainRend;
+    private final GravityBootsSettings gravityBoots;
 
     private ArcanaConfig(boolean effects, TargetRules targets, ItemSettings items, ManaSettings mana,
                          Map<String, Double> manaCosts, GravitySettings push, GravitySettings pull,
@@ -74,7 +78,8 @@ public final class ArcanaConfig {
                          SolarZenithSettings solarZenith, SolarBloomSettings solarBloom,
                          ShadowBlinkSettings shadowBlink, ShadowSwapSettings shadowSwap,
                          ShadowBodySettings shadowBody, ChainHookSettings chainHook,
-                         ChainReelSettings chainReel, ChainRendSettings chainRend) {
+                         ChainReelSettings chainReel, ChainRendSettings chainRend,
+                         GravityBootsSettings gravityBoots) {
         this.effects = effects;
         this.targets = targets;
         this.items = items;
@@ -95,6 +100,7 @@ public final class ArcanaConfig {
         this.chainHook = chainHook;
         this.chainReel = chainReel;
         this.chainRend = chainRend;
+        this.gravityBoots = gravityBoots;
     }
 
     public static ArcanaConfig load(FileConfiguration config, Logger logger) {
@@ -121,7 +127,8 @@ public final class ArcanaConfig {
                 ShadowBodySettings.from(config.getConfigurationSection("abilities.shadow_body"), BODY_DEFAULTS),
                 ChainHookSettings.from(config.getConfigurationSection("abilities.chain_hook"), HOOK_DEFAULTS),
                 ChainReelSettings.from(config.getConfigurationSection("abilities.chain_reel"), REEL_DEFAULTS),
-                ChainRendSettings.from(config.getConfigurationSection("abilities.chain_rend"), REND_DEFAULTS, logger)
+                ChainRendSettings.from(config.getConfigurationSection("abilities.chain_rend"), REND_DEFAULTS, logger),
+                GravityBootsSettings.from(config.getConfigurationSection("abilities.gravity_boots"), BOOTS_DEFAULTS)
         );
     }
 
@@ -204,5 +211,9 @@ public final class ArcanaConfig {
 
     public ChainRendSettings chainRend() {
         return chainRend;
+    }
+
+    public GravityBootsSettings gravityBoots() {
+        return gravityBoots;
     }
 }
