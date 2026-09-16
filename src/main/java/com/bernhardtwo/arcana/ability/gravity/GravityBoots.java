@@ -20,19 +20,25 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Sustained flight for mana while the Levitation Boots are worn. Not a cast
- * ability: it is driven by the flight toggle and the armor slot. Two layers:
+ * Sustained flight for mana with the Levitation Boots. Not a cast ability: it
+ * is driven by a sneak click, the flight toggle and the armor slot. Three
+ * states:
  *
- * <p><b>Armed</b>: the boots are in the boots slot in survival or adventure,
- * so allowFlight is on and the client sends the double tap. What the player
- * had before (allowFlight and flySpeed, for an Essentials /fly or an admin)
- * is written to their container the moment it is granted and restored from
- * there on every disarm path, including a join after a crash, so nobody keeps
- * creative flight for free and nobody loses a /fly they had.
+ * <p><b>Worn</b>: the boots do nothing. allowFlight is whatever it was and
+ * falls hurt like vanilla.
  *
- * <p><b>Flying</b>: the player toggled flight on. A per-flight counter of
- * accumulated seconds sets the ladder step, and mana is charged every
- * {@code tick-period} ticks. Every exit path goes through {@link #stop}.
+ * <p><b>Armed</b>: sneak plus right click with an empty main hand while
+ * wearing them. allowFlight goes on so the client sends the double tap, and
+ * what the player had before (allowFlight and flySpeed, for an Essentials
+ * /fly or an admin) is written to their container the moment it is granted
+ * and restored from there on every disarm path, including a join after a
+ * crash, so nobody keeps creative flight for free and nobody loses a /fly
+ * they had. The grant in the container is the armed state.
+ *
+ * <p><b>Flying</b>: the player toggled flight on while armed. A per-flight
+ * counter of accumulated seconds sets the ladder step, and mana is charged
+ * every {@code tick-period} ticks. Every exit path goes through {@link #stop},
+ * and every disarm path through {@link #disarm}, which stops first.
  */
 public final class GravityBoots {
 
@@ -68,32 +74,64 @@ public final class GravityBoots {
 
     // ----- armed -----
 
-    /**
-     * Brings the grant in line with reality: armed while wearing the boots in
-     * survival or adventure with permission, not armed otherwise. Idempotent,
-     * safe to call from every event that can change any of those.
-     */
-    public void sync(Player player) {
-        boolean armed = plugin.store().hasFlightGrant(player);
-        boolean wanted = player.isOnline() && !isCreativeLike(player)
-                && LevitationBoots.isWearing(plugin, player) && player.hasPermission(PERMISSION);
-        if (wanted && !armed) {
-            plugin.store().grantFlight(player, new PlayerStore.FlightGrant(player.getAllowFlight(), player.getFlySpeed()));
-            player.setAllowFlight(true);
-        } else if (!wanted && armed) {
-            stop(player, null, false);
-            disarm(player);
+    public boolean isArmed(Player player) {
+        return plugin.store().hasFlightGrant(player);
+    }
+
+    /** The sneak click: arms, or disarms when already armed. */
+    public void toggleArmed(Player player) {
+        if (isArmed(player)) {
+            disarm(player, NAME + " disarmed.");
+        } else {
+            arm(player);
         }
     }
 
-    /** Puts allowFlight and flySpeed back to what they were before the grant. No-op without a grant. */
-    public void disarm(Player player) {
+    /** Grants allowFlight, remembering what the player had. Refuses in creative or spectator, without the boots on, or without permission. */
+    public boolean arm(Player player) {
+        if (isArmed(player) || isCreativeLike(player) || !LevitationBoots.isWearing(plugin, player)) {
+            return false;
+        }
+        if (!player.hasPermission(PERMISSION)) {
+            player.sendActionBar(warn("You do not have permission to use " + NAME + "."));
+            return false;
+        }
+        plugin.store().grantFlight(player, new PlayerStore.FlightGrant(player.getAllowFlight(), player.getFlySpeed()));
+        player.setAllowFlight(true);
+        player.sendActionBar(Component.text(NAME + " armed: double tap jump to fly", NamedTextColor.LIGHT_PURPLE));
+        if (plugin.settings().effects()) {
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.6f, 1.6f);
+        }
+        return true;
+    }
+
+    /**
+     * Ends the armed state for any reason: a running flight ends first, with
+     * the grace, then allowFlight and flySpeed go back to what they were
+     * before the grant. Returns false when the player was not armed.
+     */
+    public boolean disarm(Player player, String message) {
+        stop(player, null, true);
         PlayerStore.FlightGrant previous = plugin.store().revokeFlight(player);
         if (previous == null) {
-            return;
+            return false;
         }
         player.setAllowFlight(previous.allowFlight());
         player.setFlySpeed(previous.flySpeed());
+        if (message != null && player.isOnline()) {
+            player.sendActionBar(warn(message));
+        }
+        if (plugin.settings().effects() && player.isOnline()) {
+            player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.6f, 1.6f);
+        }
+        return true;
+    }
+
+    /** Damage from an entity that actually went through: a flying escape is not free with disarm-on-damage on. */
+    public void onDamaged(Player player) {
+        if (settings().disarmOnDamage() && isArmed(player)) {
+            disarm(player, NAME + " disarmed: you were hit.");
+        }
     }
 
     /**
@@ -102,11 +140,9 @@ public final class GravityBoots {
      * previous values before anything else sees the player.
      */
     public boolean revokeStale(Player player) {
-        if (!plugin.store().hasFlightGrant(player)) {
+        if (!disarm(player, null)) {
             return false;
         }
-        stop(player, null, false);
-        disarm(player);
         plugin.getLogger().info("Revoked flight left over from an unclean shutdown for " + player.getName() + ".");
         return true;
     }
@@ -236,31 +272,24 @@ public final class GravityBoots {
         }
     }
 
-    /** Plugin disable: every flight ends with grace and every grant is restored. */
+    /** Plugin disable: everyone is disarmed, which ends every flight with the grace and restores every grant. */
     public void endAll() {
-        for (UUID id : new ArrayList<>(active.keySet())) {
-            Player player = Bukkit.getPlayer(id);
-            if (player != null) {
-                stop(player, NAME + " off.", true);
-            }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            disarm(player, NAME + " disarmed.");
         }
         active.clear();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            disarm(player);
-        }
     }
 
-    /** Startup: any online player still carrying a grant (a reload of the plugin) gets it restored, then re-armed if wearing. */
+    /** Startup: any online player still carrying a grant (a reload of the plugin) gets it restored. */
     public void sweep() {
         int revoked = 0;
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (revokeStale(player)) {
                 revoked++;
             }
-            sync(player);
         }
         if (revoked > 0) {
-            plugin.getLogger().warning("Restored allowFlight for " + revoked + " player(s) left flying by an unclean shutdown.");
+            plugin.getLogger().warning("Restored allowFlight for " + revoked + " player(s) left armed by an unclean shutdown.");
         }
     }
 

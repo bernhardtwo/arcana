@@ -44,7 +44,7 @@ public final class ArcanaConfig {
     private static final ChainReelSettings REEL_DEFAULTS = new ChainReelSettings(1.2, 1.1, 2.5, 100, 60);
     /** 1/s for the first five seconds, 2/s for the next five, and so on, decaying one step per five idle seconds. */
     private static final GravityBootsSettings BOOTS_DEFAULTS =
-            new GravityBootsSettings(1.0, 1.0, 5, 0, 5, 10, 0.05f, 10, false, false);
+            new GravityBootsSettings(1.0, 1.0, 5, 0, 5, 10, 0.05f, 10, false, true, false);
     private static final ChainRendSettings REND_DEFAULTS = new ChainRendSettings(6.0, 0.5, 5.0,
             EnumSet.of(Material.BEDROCK, Material.BARRIER, Material.SPAWNER, Material.END_PORTAL_FRAME,
                     Material.REINFORCED_DEEPSLATE), 100);

@@ -17,6 +17,7 @@ public record GravityBootsSettings(
         float flySpeed,
         int graceSlowFallingSeconds,
         boolean respectClaims,
+        boolean disarmOnDamage,
         boolean recipeEnabled
 ) {
 
@@ -34,6 +35,7 @@ public record GravityBootsSettings(
                 (float) Math.min(1.0, Math.max(0.0, section.getDouble("fly-speed", fallback.flySpeed()))),
                 Math.max(0, section.getInt("grace-slow-falling-seconds", fallback.graceSlowFallingSeconds())),
                 section.getBoolean("respect-claims", fallback.respectClaims()),
+                section.getBoolean("disarm-on-damage", fallback.disarmOnDamage()),
                 section.getBoolean("recipe-enabled", fallback.recipeEnabled())
         );
     }

@@ -181,4 +181,5 @@ abilities:
     fly-speed: 0.05
     grace-slow-falling-seconds: 10
     respect-claims: false
+    disarm-on-damage: true
     recipe-enabled: false

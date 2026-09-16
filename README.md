@@ -49,7 +49,7 @@ Five staffs and a pair of boots so far.
 
 | Ability | How to cast | What it does |
 |---|---|---|
-| Levitation | Wear them, double tap jump | Sustained flight that costs mana, more the longer you stay up; double tap again to land |
+| Levitation | Wear them, sneak + right click to arm, then double tap jump | Sustained flight that costs mana, more the longer you stay up; double tap again to land |
 
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
@@ -381,6 +381,7 @@ abilities:
     fly-speed: 0.05
     grace-slow-falling-seconds: 10
     respect-claims: false
+    disarm-on-damage: true
     recipe-enabled: false
 ```
 
@@ -624,23 +625,45 @@ has a lockout group.
 
 The Levitation Boots are the first armor item and the first ability that
 charges mana continuously instead of per cast. Nothing is cast: the boots
-are worn, and the double tap that toggles creative flight is the switch.
+are worn, armed with a sneak click, and the double tap that toggles
+creative flight is the switch. Three states:
 
-- **Armed.** While the boots sit in the boots slot of a player in survival
-  or adventure with the permission, the plugin switches `allowFlight` on so
-  the client sends the double tap at all. Creative and spectator are never
-  touched. What the player had before, `allowFlight` and `flySpeed`, is
-  written to their data container the moment it is granted and put back
-  from there on every path that takes the boots out of play: taking them
-  off, quit, death, a gamemode change and plugin disable. That is what keeps
-  an Essentials `/fly` alive: an admin with flight on who wears the boots
-  and takes them off again still has flight on afterwards. The grant is
-  also the crash guard. `allowFlight` is saved in the player file, so a
-  server that dies with someone flying would otherwise hand them creative
-  flight for free on the next login. A grant still present when a player
-  joins, or when the plugin enables with players online, means the last
-  session ended without a clean disarm, and the previous values are
-  restored before anything else sees the player. The console logs it.
+- **Worn.** The boots do nothing on their own. `allowFlight` stays whatever
+  it was and falls hurt like vanilla. This is deliberate: `allowFlight`
+  itself is what lets the client send the double tap, and vanilla never
+  applies fall damage to a player who has it, so keeping it on all the
+  time would make the boots a permanent feather falling and turn every
+  jump spam into an accidental flight.
+- **Armed.** Sneak and right click with an **empty main hand**, on air or on
+  any block that has no interaction of its own, while wearing the boots in
+  survival or adventure with the permission. A chest, an anvil, a door or a
+  villager behaves as if the boots did not exist, and so does anything held
+  in the hand, which is why the hand must be empty: an item there would be
+  placed, eaten or fired at the same time. A claim plugin that cancels the
+  click on ground it protects does not stop it: the boots listen to the
+  cancelled event too, like the staffs, because the click is only a signal
+  and nothing in the world is touched. Vanilla spawn protection is
+  different, the server drops the click before any event fires, so inside
+  it only ops can arm. Arming switches `allowFlight` on, says so and
+  chimes. What the player had before, `allowFlight` and
+  `flySpeed`, is written to their data container the moment it is granted,
+  and that grant **is** the armed state, so it survives a relog and a
+  crash like a cooldown. The same sneak click disarms. Disarming puts the
+  previous values back and, if a flight was running, ends it first with the
+  Slow Falling grace. Everything that takes the boots out of play disarms
+  the same way: taking them off, quit, death, a world change, a gamemode
+  change, plugin disable, and, with `disarm-on-damage` on, any hit from an
+  entity that actually went through, melee or projectile. That last one is
+  for a PvP server where claims are the only protection: without it, flying
+  boots make fleeing any fight trivial and attacking from above free. That
+  is also what keeps an Essentials `/fly` alive: an admin with flight on who
+  arms and disarms still has flight on afterwards. A grant still present
+  when a player joins, or when the plugin enables with players online,
+  means the last session ended without a clean disarm, and the previous
+  values are restored before anything else sees the player. The console
+  logs it. While armed and not flying, vanilla's no-fall-damage rule for
+  `allowFlight` applies, so arm before a drop is a legitimate use; nothing
+  is free about it since a hit disarms.
 - **Flying.** The double tap turns flight on, with the checks in the usual
   order: permission, then elytra (never while gliding), then the claim when
   `respect-claims` is on, then mana for the first charge. Each refusal
@@ -825,24 +848,21 @@ active, next to the GriefPrevention line.
   block survives until someone breaks it or a zenith is cast there again.
 - Dragon breath is an area effect cloud, not a living entity or a projectile,
   so it passes through Ice Armor like environmental damage.
-- Wearing the Levitation Boots means `allowFlight` is on, and vanilla never
-  applies fall damage to a player with `allowFlight` on, flying or not
-  (`Player#causeFallDamage` returns early on `mayfly`). So the boots also
-  cushion every fall while worn, the same way an Essentials `/fly` does,
-  and the Slow Falling grace only matters once they come off. Measured: a
-  15 block drop with the boots on and no flight does no damage; the same
-  drop without them does 12. Charging fall damage by hand for armed
-  players is possible but is a separate decision.
-- With the Levitation Boots on, the vanilla double tap is live: a player who
-  spams jump in the air will start flying by accident and pay the first
-  charge. That is the cost of using the vanilla toggle instead of a key the
-  client does not have.
-- The boots capture the previous `allowFlight` when they arm. A plugin that
-  turns flight on for a player some ticks after they join, as Essentials can
-  with `/fly` persisted, may do so after the boots armed with "off" as the
-  previous value, and taking the boots off would then turn that flight off.
-  Running `/fly` again fixes it. `/arcana reset` does not touch the ladder
-  counter; it decays by itself within seconds.
+- While the Levitation Boots are armed, `allowFlight` is on, and vanilla
+  never applies fall damage to a player with `allowFlight` on, flying or
+  not (`Player#causeFallDamage` returns early on `mayfly`). Arming is a
+  deliberate act and a hit disarms, so this is contained, but an armed
+  player who is not flying does not take fall damage. Measured: a 15 block
+  drop with the boots merely worn does 12 damage, the same as without them.
+- While armed, the vanilla double tap is live: a player who spams jump in
+  the air will start flying and pay the first charge. That is the cost of
+  using the vanilla toggle instead of a key the client does not have, and
+  why arming is explicit.
+- Arming needs an empty main hand and a click on air or on a block with no
+  interaction of its own. Right clicking air with an empty hand sends no
+  packet in vanilla, so in practice it is a click on the ground or a wall.
+  `/arcana reset` does not touch the ladder counter; it decays by itself
+  within seconds.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.
   Without an anticheat there is no problem. The day Grim comes in, those ticks
   will need an exemption.

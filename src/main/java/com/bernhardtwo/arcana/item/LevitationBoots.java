@@ -33,7 +33,8 @@ public final class LevitationBoots {
         meta.displayName(Component.text("Levitation Boots", NamedTextColor.LIGHT_PURPLE)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of(
-                line("Wear: double tap jump to fly, again to land"),
+                line("Wear, then sneak + right click to arm"),
+                line("Armed: double tap jump to fly, again to land"),
                 line("Costs mana while flying, more the longer you stay up")));
         meta.setEnchantmentGlintOverride(true);
         // Armor wears out on every hit; a magic item that quietly breaks after a few fights would just be lost.
