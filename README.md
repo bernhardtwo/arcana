@@ -397,13 +397,13 @@ abilities:
     min-charge-ticks: 5
     max-charge-ticks: 60
     dash-power-min: 0.8
-    dash-power-max: 2.2
+    dash-power-max: 3.2
     second-dash-delay-ticks: 8
     second-dash-power-multiplier: 0.8
     root-while-charging: true
     cancel-on-damage: true
     mana-cost: 15
-    cooldown-seconds: 12
+    cooldown-seconds: 8
 
   storm_smash:
     lightning-base-damage: 4.0
@@ -799,10 +799,14 @@ cancels the attack.
   gamemode change and plugin disable. The cooldown starts only at a release
   that fired. There is no fall grace on purpose: a dash aimed upward ends in
   a fall, and a fall with the hammer in hand is a smash. Measured with a
-  headless client on flat stone, both dashes summed: 4.0, 7.0 and 10.3
+  headless client on flat stone, both dashes summed: 4.2, 9.3 and 15.0
   blocks for the minimum, half and full charge aimed level, where ground
-  friction eats most of it, and 7.7, 14.7 and 22.9 blocks aimed 30 degrees
-  up. A full charge aimed straight up reaches 29 blocks.
+  friction eats most of it, and 8.0, 19.7 and 34.1 blocks aimed 30 degrees
+  up. On the ground the distance is linear in the dash power, 4.7 blocks
+  per block per tick; aimed up it grows a little faster than that, since a
+  stronger dash also stays in the air longer. Chained back to back with the
+  mana refilled, five charges a minute: 75 blocks per minute aimed level
+  and 156 aimed up, against a walk of about 260.
 - **Smash** is the mace's own melee hit, seen from `EntityDamageByEntityEvent`
   at MONITOR with `ignoreCancelled`: a swing that misses does nothing, and
   only a hit that actually went through strikes. The vanilla hit is never
@@ -1030,8 +1034,8 @@ active, next to the GriefPrevention line.
   within seconds.
 - Wind Burst is vanilla and does what it does: every smash on a target
   launches the caster again, and a player who keeps landing on the same
-  target keeps bouncing. Measured: a full charge straight up next to a
-  target gave nine hits in thirteen seconds, one per bounce, each a mace
+  target keeps bouncing. Measured with a 2.2 dash straight up next to a
+  target: nine hits in thirteen seconds, one per bounce, each a mace
   smash from about four blocks. Smash's cooldown only limits the bolt, not
   the bounce.
 - The beam starts from the use packet, which the vanilla client sends for a

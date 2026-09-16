@@ -50,7 +50,7 @@ public final class ArcanaConfig {
             EnumSet.of(Material.BEDROCK, Material.BARRIER, Material.SPAWNER, Material.END_PORTAL_FRAME,
                     Material.REINFORCED_DEEPSLATE), 100);
     private static final StormSettings STORM_DEFAULTS = new StormSettings(
-            new StormSettings.Charge(5, 60, 0.8, 2.2, 8, 0.8, true, true, 12),
+            new StormSettings.Charge(5, 60, 0.8, 3.2, 8, 0.8, true, true, 8),
             new StormSettings.Smash(4.0, 0.5, 15.0, 0.0, 3),
             new StormSettings.Beam(5.0, 10.0, 0.0, 20.0, 10, true, 1.0),
             1, false);

@@ -188,13 +188,13 @@ abilities:
     min-charge-ticks: 5
     max-charge-ticks: 60
     dash-power-min: 0.8
-    dash-power-max: 2.2
+    dash-power-max: 3.2
     second-dash-delay-ticks: 8
     second-dash-power-multiplier: 0.8
     root-while-charging: true
     cancel-on-damage: true
     mana-cost: 15
-    cooldown-seconds: 12
+    cooldown-seconds: 8
 
   storm_smash:
     lightning-base-damage: 4.0
