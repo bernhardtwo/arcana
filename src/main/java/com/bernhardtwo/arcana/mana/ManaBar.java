@@ -13,7 +13,8 @@ import java.util.UUID;
 
 /**
  * One boss bar per player, shown while a wand is in either hand or the
- * Levitation Boots are armed or flying, and only with the mana bridge active.
+ * Levitation Boots are armed or flying, or a storm channel or beam is running,
+ * and only with the mana bridge active.
  * Refreshed by one task every 10 ticks over the online players, and on the
  * spot when the held item or the boots state changes.
  */
@@ -34,7 +35,7 @@ public final class ManaBar {
 
     /** Shows, updates or hides the bar for this player right now. */
     public void refresh(Player player) {
-        String flight = plugin.gravityBoots().status(player);
+        String flight = status(player);
         boolean holding = flight != null
                 || AbilityItems.wandOf(plugin, player.getInventory().getItemInMainHand()).isPresent()
                 || AbilityItems.wandOf(plugin, player.getInventory().getItemInOffHand()).isPresent();
@@ -52,6 +53,19 @@ public final class ManaBar {
         bar.progress((float) Math.min(1.0, Math.max(0.0, mana / max)));
         String title = String.format("Mana %.0f / %.0f", mana, max);
         bar.name(Component.text(flight == null ? title : title + "  |  " + flight));
+    }
+
+    /** The boots state, then a running storm channel or beam. Both is possible: armed boots and a beam. */
+    private String status(Player player) {
+        String boots = plugin.gravityBoots().status(player);
+        String storm = plugin.stormCharge().status(player);
+        if (storm == null) {
+            storm = plugin.stormBeam().status(player);
+        }
+        if (boots == null || storm == null) {
+            return boots == null ? storm : boots;
+        }
+        return boots + "  |  " + storm;
     }
 
     public void hide(Player player) {

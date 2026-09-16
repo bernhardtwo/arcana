@@ -39,6 +39,9 @@ public final class AbilityItems {
         if (LevitationBoots.ID.equals(id)) {
             return Optional.of(LevitationBoots.create(plugin, amount));
         }
+        if (StormHammer.ID.equals(id)) {
+            return plugin.wands().find(id).map(wand -> StormHammer.create(plugin, wand, amount));
+        }
         return plugin.wands().find(id).map(wand -> {
             ItemStack stack = create(plugin, wand);
             stack.setAmount(amount);

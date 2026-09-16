@@ -183,3 +183,37 @@ abilities:
     respect-claims: false
     disarm-on-damage: true
     recipe-enabled: false
+
+  storm_charge:
+    min-charge-ticks: 5
+    max-charge-ticks: 60
+    dash-power-min: 0.8
+    dash-power-max: 2.2
+    second-dash-delay-ticks: 8
+    second-dash-power-multiplier: 0.8
+    root-while-charging: true
+    cancel-on-damage: true
+    mana-cost: 15
+    cooldown-seconds: 12
+
+  storm_smash:
+    lightning-base-damage: 4.0
+    lightning-damage-per-block: 0.5
+    lightning-max-damage: 15.0
+    lightning-radius: 0.0
+    height-source: fall-distance
+    mana-cost: 10
+    cooldown-seconds: 3
+
+  storm_beam:
+    damage-percent-per-second: 5.0
+    mana-percent-per-second: 10.0
+    max-damage-per-second: 0
+    range: 20.0
+    tick-period: 10
+    affect-players: true
+    lose-target-grace-seconds: 1.0
+
+  storm_hammer:
+    wind-burst-level: 1
+    recipe-enabled: false

@@ -3,7 +3,7 @@
 Item-bound magic abilities for Paper servers. A staff in hand, right click,
 and something happens around you.
 
-Five staffs and a pair of boots so far.
+Five staffs, a pair of boots and a hammer so far.
 
 **Gravity Staff** (blaze rod)
 
@@ -51,6 +51,14 @@ Five staffs and a pair of boots so far.
 |---|---|---|
 | Levitation | Wear them, sneak + right click to arm, then double tap jump | Sustained flight that costs mana, more the longer you stay up; double tap again to land |
 
+**Thor's Hammer** (mace)
+
+| Ability | How to cast | What it does |
+|---|---|---|
+| Storm: Beam | Right click, hold | A continuous bolt on whatever you aim at, a share of its maximum health per second for a share of your maximum mana |
+| Storm: Charge | Sneak + right click, hold sneak, release | Rooted while you charge, then a dash where you look and a second one where you look after it |
+| Storm: Smash | Left click | The mace hit, and lightning on whatever it connects with, harder the further you fell |
+
 Written for Paper 1.21.11 on Java 21. No NMS, no mixins, no runtime
 dependencies.
 
@@ -89,7 +97,7 @@ port 25566 for testing without touching production.
 All under the `arcana.admin` permission (op only by default).
 
 ```
-/arcana give <player> <id> [amount]   hands out a staff, a mana potion or the boots
+/arcana give <player> <id> [amount]   hands out a staff, a mana potion, the boots or the hammer
 /arcana list                          registered items and the GriefPrevention, CoreProtect and AuraSkills status
 /arcana reload                  re-reads config.yml without a restart
 /arcana reset [player]          clears every cooldown and refills every charge pool
@@ -102,7 +110,7 @@ removed, `Cleared 4 cooldowns and refilled 1 charge pool for vegabernh`, and
 never errors on a player who has none. It exists for balancing: without it
 the only way to skip a 15 minute cooldown is deleting the playerdata file.
 
-Registered items: the staffs `gravity`, `ice`, `solar`, `shadow` and `chain`, `mana_potion` and `gravity_boots`.
+Registered items: the staffs `gravity`, `ice`, `solar`, `shadow` and `chain`, `mana_potion`, `gravity_boots` and `storm_hammer`.
 
 ## Permissions
 
@@ -125,6 +133,7 @@ Registered items: the staffs `gravity`, `ice`, `solar`, `shadow` and `chain`, `m
 | `arcana.use.chain_reel` | true | Cast Reel |
 | `arcana.use.chain_rend` | true | Cast Rend |
 | `arcana.use.gravity_boots` | true | Fly with the Levitation Boots |
+| `arcana.use.storm_hammer` | true | Use Thor's Hammer: Charge, Smash and Beam |
 
 The `arcana.use.*` nodes are checked on every cast, so they can be handed out
 per rank from LuckPerms without touching the plugin.
@@ -383,6 +392,40 @@ abilities:
     respect-claims: false
     disarm-on-damage: true
     recipe-enabled: false
+
+  storm_charge:
+    min-charge-ticks: 5
+    max-charge-ticks: 60
+    dash-power-min: 0.8
+    dash-power-max: 2.2
+    second-dash-delay-ticks: 8
+    second-dash-power-multiplier: 0.8
+    root-while-charging: true
+    cancel-on-damage: true
+    mana-cost: 15
+    cooldown-seconds: 12
+
+  storm_smash:
+    lightning-base-damage: 4.0
+    lightning-damage-per-block: 0.5
+    lightning-max-damage: 15.0
+    lightning-radius: 0.0
+    height-source: fall-distance
+    mana-cost: 10
+    cooldown-seconds: 3
+
+  storm_beam:
+    damage-percent-per-second: 5.0
+    mana-percent-per-second: 10.0
+    max-damage-per-second: 0
+    range: 20.0
+    tick-period: 10
+    affect-players: true
+    lose-target-grace-seconds: 1.0
+
+  storm_hammer:
+    wind-burst-level: 1
+    recipe-enabled: false
 ```
 
 Notes on decisions that are not obvious:
@@ -444,6 +487,15 @@ Notes on decisions that are not obvious:
   a server that doubles every `mana-cost` for a bigger pool should leave
   these alone. `fly-speed` is Bukkit's scale, where vanilla creative flight
   is 0.1. `max-step: 0` means the ladder never stops climbing.
+- The storm cooldowns are in seconds, not ticks, and one permission,
+  `arcana.use.storm_hammer`, covers the whole weapon. `storm_beam` has no
+  `mana-cost`: `mana-percent-per-second` is a share of the caster's maximum
+  mana, already calibrated against any pool, so a server that scales every
+  `mana-cost` for a bigger pool should leave it alone. `max-damage-per-second:
+  0` means no cap. `lightning-radius: 0` means the bolt hits only what the
+  hammer hit; above 0 it also hits everything valid within that radius.
+  `height-source` accepts `fall-distance` only; anything else is logged and
+  falls back to it.
 
 ## How the sun works
 
@@ -714,6 +766,114 @@ creative flight is the switch. Three states:
   silently, while the boots are flying the caster: a jump means nothing in
   flight and would only spend mana.
 
+## How the storm works
+
+Thor's Hammer is the first weapon: a mace, unbreakable, with Wind Burst at
+`wind-burst-level` applied when it is created, registered as a wand so the
+click dispatcher, the lore, the mana bar and the give command cover it like a
+staff. It is also the first item with a percentage cost and a percentage
+damage. Because it is a real mace, the vanilla smash attack, its knockback
+and the Wind Burst launch all work as usual; the plugin adds on top and never
+cancels the attack.
+
+- **Charge** is a channel that starts on the sneak click and ends when sneak
+  is released. Time accumulates up to `max-charge-ticks`; with
+  `root-while-charging` on, `walkSpeed` goes to 0 for the duration, and the
+  speed the caster had is written to their data container the moment it is
+  taken, like the boots' flight grant: it is restored on every exit path, and
+  a grant still present on join, or when the plugin enables with players
+  online, means the last session died mid-channel and the previous speed is
+  put back before anything else sees the player. Measured: after a `docker
+  kill` with a player rooted, the player file carried `walkSpeed 0.0`, and on
+  the next join the console logged the restore and the file read `0.1`. On
+  release, held at least `min-charge-ticks`, the caster is launched along
+  the look direction at a power interpolated from `dash-power-min` at the
+  minimum to `dash-power-max` at `max-charge-ticks`, and
+  `second-dash-delay-ticks` later a second dash fires toward wherever they
+  look by then at `second-dash-power-multiplier` of the first. The chat says
+  `Storm: Charge: released at 53%`. Released before the minimum, nothing
+  happens: no dash, no cooldown, and the mana paid on cast, like Swap's,
+  comes back. The same refund happens on every cancel: damage that went
+  through with `cancel-on-damage` on, the hammer leaving the hand (hotbar
+  scroll, hand swap, drop, or noticed at release), quit, death, world change,
+  gamemode change and plugin disable. The cooldown starts only at a release
+  that fired. There is no fall grace on purpose: a dash aimed upward ends in
+  a fall, and a fall with the hammer in hand is a smash. Measured with a
+  headless client on flat stone, both dashes summed: 4.0, 7.0 and 10.3
+  blocks for the minimum, half and full charge aimed level, where ground
+  friction eats most of it, and 7.7, 14.7 and 22.9 blocks aimed 30 degrees
+  up. A full charge aimed straight up reaches 29 blocks.
+- **Smash** is the mace's own melee hit, seen from `EntityDamageByEntityEvent`
+  at MONITOR with `ignoreCancelled`: a swing that misses does nothing, and
+  only a hit that actually went through strikes. The vanilla hit is never
+  cancelled and never waits: no mana, no permission or a running cooldown
+  only lose the bolt, and the refusal for mana is a chat line. The checks run
+  in the usual order, permission, cooldown, mana, then the claim rule, and
+  the bolt lands one tick later so the two damages never nest inside the
+  same event. The bolt is `strikeLightningEffect`, the flash and the thunder
+  with no fire and no damage of its own, plus `lightning-base-damage` plus
+  `lightning-damage-per-block` times the caster's fall distance at the
+  moment of the hit, the same number the mace reads for its own bonus,
+  capped at `lightning-max-damage`, dealt as lightning damage with the
+  caster as damager. Measured on a 1000 health husk, mace and bolt
+  separated by repeating each hit with the pool empty: from 0, 3.3, 8.6 and
+  18.8 blocks of fall the mace did 5.9, 27.6, 42.2 and 57.2 and the bolt
+  added 3.9, 5.6, 8.2 and 13.2. The chat line after each bolt says both the
+  damage and the blocks.
+- **Beam** lives on the held right button. The vanilla client repeats a held
+  right click every four ticks, so the first click starts the beam, every one
+  after refreshes it, and eight ticks without one end it. Every tick it ray
+  traces blocks and living entities from the eye up to `range`, so it never
+  crosses a wall, and draws the sparks to whatever it hit. Every
+  `tick-period` ticks with a target in the line of fire it charges
+  `mana-percent-per-second` of the caster's maximum mana, scaled to the
+  period, and deals `damage-percent-per-second` of the target's maximum
+  health the same way, capped by `max-damage-per-second` when that is not
+  0. With nothing in the line of fire it charges nothing at all, and after
+  `lose-target-grace-seconds` of that it ends with `Storm: Beam lost its
+  target.`; out of mana ends it with `Storm: Beam: out of mana.` Players are
+  targets only with `affect-players` on, and both the beam and the bolt
+  apply the usual claim rule: a target standing where the caster cannot
+  build is refused with a message, so the beam on such a player is a beam
+  with no target. The hand is only read on charge ticks, never per tick,
+  since reading an item's container copies its meta. Measured from a full
+  pool of 22: 11.0 seconds and 53% of the target's maximum health, the same
+  on a husk, a ravager and a warden, 21 charges where the pool pays 20 and
+  regeneration one.
+- **True damage** is `LivingEntity#damage(amount, DamageSource)` with
+  `DamageType.MAGIC` for the beam and `DamageType.LIGHTNING_BOLT` for the
+  bolt, the caster as both causing and direct entity. That is the vanilla
+  pipeline: `EntityDamageByEntityEvent` fires with the caster as damager, so
+  the PvP flag, claims, god modes, totems, absorption and kill credit all
+  apply as for a sword. Magic damage bypasses armor and shields, but
+  not Resistance, not Protection, and witches take 15% of it, as in vanilla.
+  Lightning damage is reduced by armor. What neither does is touch the
+  target's invulnerability window: vanilla keeps every hit within ten ticks
+  of the last only for the amount above it and refreshes the window on each
+  hit, so a beam ticking twice a second would leave its target immune to
+  everyone else half the time. So the window and the last damage amount are
+  saved, cleared for the hit, and put back afterwards. Measured with a
+  second player hitting the same 1000 health husk with an iron sword every
+  0.65 seconds for ten seconds: 94.5 damage alone, 94.5 next to a beam that
+  took 525 of its own.
+- **Feedback.** While a channel or a beam runs the mana bar shows it in the
+  title, `Storm: Charge 53%` or `Storm: Beam on Zombie`, next to the boots
+  state when both apply. Every event, a release, a cancel, a refusal, the
+  bolt, is a chat line, for the reason the boots' are.
+- **Not upgradeable.** Wind Burst II and III exist in vanilla and drop from
+  ominous vaults. The hammer never reaches an anvil, an enchanting table or
+  a grindstone: the item guard refuses any tagged item moved into those
+  inventories, by click, drag, shift click, hotbar key or hopper. Measured
+  with a Wind Burst II book in the anvil's second slot: the hammer is
+  refused in the first slot, by drop and by shift click, while a plain mace
+  in the same slot combines with the book as usual; the same in the
+  enchanting table and the grindstone.
+- Measured with spark on a warm server, two players holding a beam on a
+  target for a full minute: the beam task took 0.30% of the server thread
+  for both, about 0.15 ms per tick, and the repeated clicks another 0.12%.
+  There is an optional recipe, off by default: a mace, two breeze rods and a
+  lightning rod, shapeless, under `storm_hammer.recipe-enabled`.
+
 ## Item protection
 
 Every staff is a vanilla item with vanilla uses: an end rod or a chain
@@ -868,6 +1028,19 @@ active, next to the GriefPrevention line.
   packet in vanilla, so in practice it is a click on the ground or a wall.
   `/arcana reset` does not touch the ladder counter; it decays by itself
   within seconds.
+- Wind Burst is vanilla and does what it does: every smash on a target
+  launches the caster again, and a player who keeps landing on the same
+  target keeps bouncing. Measured: a full charge straight up next to a
+  target gave nine hits in thirteen seconds, one per bounce, each a mace
+  smash from about four blocks. Smash's cooldown only limits the bolt, not
+  the bounce.
+- The beam starts from the use packet, which the vanilla client sends for a
+  right click on air or a block. A right click on an entity with an
+  interaction of its own within reach, a villager or a horse, is that
+  interaction instead, so at close range the beam does not start on those;
+  on a zombie or a player it does.
+- A rooted caster still steers in the air: `walkSpeed` only governs ground
+  movement.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.
   Without an anticheat there is no problem. The day Grim comes in, those ticks
   will need an exemption.
@@ -879,7 +1052,16 @@ The structure is already laid out for more than one ability:
 - `Ability` is the interface. A new ability is implemented and registered in
   `ArcanaPlugin#onEnable`.
 - `Wand` maps an item to three slots: right click, sneak + right click and
-  left click. The left click slot may be null. A new staff is one line.
+  left click. The left click slot may be null. A new staff is one line. A
+  wand that needs more than the generic item, Thor's Hammer with its
+  enchantment and unbreakable flag, builds on `AbilityItems#create` in its
+  own class and is special cased in the give command.
+- A left click that lands on an entity within reach never fires
+  `PlayerInteractEvent`. The dispatcher sees it from
+  `EntityDamageByEntityEvent`, and an ability that needs the hit itself,
+  Storm: Smash, listens there at MONITOR, refuses the dispatcher through
+  `canCast`, and keeps its slot only for the lore, the permission and the
+  reset command.
 - `Ability#lockoutGroup` lets a set of abilities share a lockout: while one is
   on cooldown, none of the others in the group can be cast. The ice abilities
   use it, the gravity ones do not.

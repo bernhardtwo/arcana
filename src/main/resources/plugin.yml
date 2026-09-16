@@ -66,3 +66,6 @@ permissions:
   arcana.use.gravity_boots:
     description: "Allows flying with the Levitation Boots."
     default: true
+  arcana.use.storm_hammer:
+    description: "Allows using Thor's Hammer: Charge, Smash and Beam."
+    default: true

@@ -20,6 +20,9 @@ import com.bernhardtwo.arcana.ability.shadow.ShadowSwapAbility;
 import com.bernhardtwo.arcana.ability.solar.SolarBloomAbility;
 import com.bernhardtwo.arcana.ability.solar.SolarLanternAbility;
 import com.bernhardtwo.arcana.ability.solar.SolarZenithAbility;
+import com.bernhardtwo.arcana.ability.storm.StormBeamAbility;
+import com.bernhardtwo.arcana.ability.storm.StormChargeAbility;
+import com.bernhardtwo.arcana.ability.storm.StormSmashAbility;
 import com.bernhardtwo.arcana.command.ArcanaCommand;
 import com.bernhardtwo.arcana.config.ArcanaConfig;
 import com.bernhardtwo.arcana.integration.ClaimGuard;
@@ -27,6 +30,7 @@ import com.bernhardtwo.arcana.integration.CoreProtectLog;
 import com.bernhardtwo.arcana.integration.ManaBridge;
 import com.bernhardtwo.arcana.item.LevitationBoots;
 import com.bernhardtwo.arcana.item.ManaPotion;
+import com.bernhardtwo.arcana.item.StormHammer;
 import com.bernhardtwo.arcana.item.Wand;
 import com.bernhardtwo.arcana.item.WandRegistry;
 import com.bernhardtwo.arcana.listener.AbilityUseListener;
@@ -41,6 +45,7 @@ import com.bernhardtwo.arcana.listener.ManaListener;
 import com.bernhardtwo.arcana.mana.ManaBar;
 import com.bernhardtwo.arcana.listener.ShadowListener;
 import com.bernhardtwo.arcana.listener.SolarListener;
+import com.bernhardtwo.arcana.listener.StormListener;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -72,6 +77,9 @@ public final class ArcanaPlugin extends JavaPlugin {
     private ShadowSwapAbility shadowSwap;
     private ChainHookAbility chainHook;
     private GravityBoots gravityBoots;
+    private StormChargeAbility stormCharge;
+    private StormBeamAbility stormBeam;
+    private StormSmashAbility stormSmash;
 
     @Override
     public void onEnable() {
@@ -116,6 +124,13 @@ public final class ArcanaPlugin extends JavaPlugin {
         solarZenith.removeOrphanLights();
         gravityBoots = new GravityBoots(this);
         gravityBoots.sweep();
+        stormCharge = new StormChargeAbility(this);
+        abilities.register(stormCharge);
+        stormBeam = new StormBeamAbility(this);
+        abilities.register(stormBeam);
+        stormSmash = new StormSmashAbility(this);
+        abilities.register(stormSmash);
+        stormCharge.sweep();
 
         wands = new WandRegistry();
         wands.register(new Wand("gravity", "Gravity Staff", Material.BLAZE_ROD,
@@ -128,6 +143,8 @@ public final class ArcanaPlugin extends JavaPlugin {
                 "shadow_blink", "shadow_body", "shadow_swap"));
         wands.register(new Wand("chain", "Chainshot", Material.IRON_CHAIN,
                 "chain_reel", "chain_rend", "chain_hook"));
+        wands.register(new Wand(StormHammer.ID, "Thor's Hammer", Material.MACE,
+                "storm_beam", "storm_charge", "storm_smash"));
 
         getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
         getServer().getPluginManager().registerEvents(new ItemGuardListener(this), this);
@@ -140,6 +157,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ShadowListener(this, shadowBody, shadowSwap), this);
         getServer().getPluginManager().registerEvents(new ChainListener(chainHook), this);
         getServer().getPluginManager().registerEvents(new GravityBootsListener(this, gravityBoots), this);
+        getServer().getPluginManager().registerEvents(new StormListener(this, stormCharge, stormBeam, stormSmash), this);
 
         PluginCommand command = getCommand("arcana");
         if (command != null) {
@@ -158,6 +176,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, manaBar::tick, 10L, 10L);
         ManaPotion.syncRecipe(this);
         LevitationBoots.syncRecipe(this);
+        StormHammer.syncRecipe(this);
         getLogger().info("Arcana enabled with " + abilities.all().size() + " abilities.");
     }
 
@@ -184,6 +203,12 @@ public final class ArcanaPlugin extends JavaPlugin {
         if (gravityBoots != null) {
             gravityBoots.endAll();
         }
+        if (stormCharge != null) {
+            stormCharge.cancelAll();
+        }
+        if (stormBeam != null) {
+            stormBeam.endAll();
+        }
         if (manaBar != null) {
             manaBar.hideAll();
         }
@@ -194,6 +219,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         settings = ArcanaConfig.load(getConfig(), getLogger());
         ManaPotion.syncRecipe(this);
         LevitationBoots.syncRecipe(this);
+        StormHammer.syncRecipe(this);
     }
 
     /** Defensive insurance: our displays are non-persistent, but sweep loaded worlds anyway. */
@@ -271,5 +297,13 @@ public final class ArcanaPlugin extends JavaPlugin {
 
     public GravityBoots gravityBoots() {
         return gravityBoots;
+    }
+
+    public StormChargeAbility stormCharge() {
+        return stormCharge;
+    }
+
+    public StormBeamAbility stormBeam() {
+        return stormBeam;
     }
 }

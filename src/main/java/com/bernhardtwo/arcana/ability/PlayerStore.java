@@ -152,6 +152,23 @@ public final class PlayerStore {
         data.set(flightAtKey(), PersistentDataType.LONG, System.currentTimeMillis());
     }
 
+    // ----- walk speed taken by Storm: Charge -----
+
+    /** Write-through, like the flight grant: the speed to put back is in the file before walkSpeed goes to 0. */
+    public void grantRoot(Player player, float walkSpeed) {
+        player.getPersistentDataContainer().set(rootKey(), PersistentDataType.FLOAT, walkSpeed);
+    }
+
+    /** Removes the grant and returns the walk speed to restore, or null when there was none. */
+    public Float revokeRoot(Player player) {
+        PersistentDataContainer data = player.getPersistentDataContainer();
+        Float walkSpeed = data.get(rootKey(), PersistentDataType.FLOAT);
+        if (walkSpeed != null) {
+            data.remove(rootKey());
+        }
+        return walkSpeed;
+    }
+
     private record Pool(int count, long lastRegen) {
     }
 
@@ -203,5 +220,9 @@ public final class PlayerStore {
 
     private NamespacedKey flightAtKey() {
         return new NamespacedKey(plugin, "flight.at");
+    }
+
+    private NamespacedKey rootKey() {
+        return new NamespacedKey(plugin, "storm.walkspeed");
     }
 }

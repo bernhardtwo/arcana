@@ -39,7 +39,8 @@ public final class ArcanaConfig {
             Map.entry("ice_slash", 6.0), Map.entry("ice_breaker", 12.0), Map.entry("ice_armor", 20.0),
             Map.entry("solar_lantern", 15.0), Map.entry("solar_zenith", 30.0), Map.entry("solar_bloom", 4.0),
             Map.entry("shadow_blink", 8.0), Map.entry("shadow_swap", 12.0), Map.entry("shadow_body", 15.0),
-            Map.entry("chain_hook", 0.0), Map.entry("chain_reel", 0.0), Map.entry("chain_rend", 0.0));
+            Map.entry("chain_hook", 0.0), Map.entry("chain_reel", 0.0), Map.entry("chain_rend", 0.0),
+            Map.entry("storm_charge", 15.0), Map.entry("storm_smash", 10.0));
     private static final ChainHookSettings HOOK_DEFAULTS = new ChainHookSettings(24.0, 1.6, 200, 40);
     private static final ChainReelSettings REEL_DEFAULTS = new ChainReelSettings(1.2, 1.1, 2.5, 100, 60);
     /** 1/s for the first five seconds, 2/s for the next five, and so on, decaying one step per five idle seconds. */
@@ -48,6 +49,11 @@ public final class ArcanaConfig {
     private static final ChainRendSettings REND_DEFAULTS = new ChainRendSettings(6.0, 0.5, 5.0,
             EnumSet.of(Material.BEDROCK, Material.BARRIER, Material.SPAWNER, Material.END_PORTAL_FRAME,
                     Material.REINFORCED_DEEPSLATE), 100);
+    private static final StormSettings STORM_DEFAULTS = new StormSettings(
+            new StormSettings.Charge(5, 60, 0.8, 2.2, 8, 0.8, true, true, 12),
+            new StormSettings.Smash(4.0, 0.5, 15.0, 0.0, 3),
+            new StormSettings.Beam(5.0, 10.0, 0.0, 20.0, 10, true, 1.0),
+            1, false);
 
     private final boolean effects;
     private final TargetRules targets;
@@ -70,6 +76,7 @@ public final class ArcanaConfig {
     private final ChainReelSettings chainReel;
     private final ChainRendSettings chainRend;
     private final GravityBootsSettings gravityBoots;
+    private final StormSettings storm;
 
     private ArcanaConfig(boolean effects, TargetRules targets, ItemSettings items, ManaSettings mana,
                          Map<String, Double> manaCosts, GravitySettings push, GravitySettings pull,
@@ -79,7 +86,7 @@ public final class ArcanaConfig {
                          ShadowBlinkSettings shadowBlink, ShadowSwapSettings shadowSwap,
                          ShadowBodySettings shadowBody, ChainHookSettings chainHook,
                          ChainReelSettings chainReel, ChainRendSettings chainRend,
-                         GravityBootsSettings gravityBoots) {
+                         GravityBootsSettings gravityBoots, StormSettings storm) {
         this.effects = effects;
         this.targets = targets;
         this.items = items;
@@ -101,6 +108,7 @@ public final class ArcanaConfig {
         this.chainReel = chainReel;
         this.chainRend = chainRend;
         this.gravityBoots = gravityBoots;
+        this.storm = storm;
     }
 
     public static ArcanaConfig load(FileConfiguration config, Logger logger) {
@@ -128,7 +136,8 @@ public final class ArcanaConfig {
                 ChainHookSettings.from(config.getConfigurationSection("abilities.chain_hook"), HOOK_DEFAULTS),
                 ChainReelSettings.from(config.getConfigurationSection("abilities.chain_reel"), REEL_DEFAULTS),
                 ChainRendSettings.from(config.getConfigurationSection("abilities.chain_rend"), REND_DEFAULTS, logger),
-                GravityBootsSettings.from(config.getConfigurationSection("abilities.gravity_boots"), BOOTS_DEFAULTS)
+                GravityBootsSettings.from(config.getConfigurationSection("abilities.gravity_boots"), BOOTS_DEFAULTS),
+                StormSettings.from(config.getConfigurationSection("abilities"), STORM_DEFAULTS, logger)
         );
     }
 
@@ -215,5 +224,9 @@ public final class ArcanaConfig {
 
     public GravityBootsSettings gravityBoots() {
         return gravityBoots;
+    }
+
+    public StormSettings storm() {
+        return storm;
     }
 }
