@@ -5,6 +5,7 @@ import com.bernhardtwo.arcana.ability.storm.StormBeamAbility;
 import com.bernhardtwo.arcana.ability.storm.StormChargeAbility;
 import com.bernhardtwo.arcana.ability.storm.StormSmashAbility;
 import com.bernhardtwo.arcana.item.StormHammer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,11 +17,18 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /** Feeds the three storm abilities: the sneak release, the hit that landed, and every path that ends a channel or a beam. */
 public final class StormListener implements Listener {
@@ -29,6 +37,8 @@ public final class StormListener implements Listener {
     private final StormChargeAbility charge;
     private final StormBeamAbility beam;
     private final StormSmashAbility smash;
+    // A right click on an entity arrives as PlayerInteractAtEntityEvent and PlayerInteractEntityEvent in the same tick.
+    private final Map<UUID, Integer> lastEntityClickTick = new HashMap<>();
 
     public StormListener(ArcanaPlugin plugin, StormChargeAbility charge, StormBeamAbility beam, StormSmashAbility smash) {
         this.plugin = plugin;
@@ -43,6 +53,35 @@ public final class StormListener implements Listener {
         if (!event.isSneaking()) {
             charge.release(event.getPlayer());
         }
+    }
+
+    /**
+     * A right click on an entity with an interaction of its own, a villager,
+     * a horse, an item frame, is that interaction on the client and never
+     * sends the use packet, so the dispatcher never sees it. With the hammer
+     * in the main hand the interaction is cancelled, no trading and no
+     * mounting, and the click goes to the dispatcher like any other: the
+     * beam, or the charge when sneaking. The event fires for both hands and,
+     * as the interact-at subclass, twice for the main hand, hence the hand
+     * check and the tick dedupe. Cancelled events count too, like the staffs.
+     */
+    @EventHandler(ignoreCancelled = false)
+    public void onInteractEntity(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        Player player = event.getPlayer();
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (!StormHammer.isHammer(plugin, held)) {
+            return;
+        }
+        event.setCancelled(true);
+        int tick = Bukkit.getCurrentTick();
+        Integer previous = lastEntityClickTick.put(player.getUniqueId(), tick);
+        if (previous != null && previous == tick) {
+            return;
+        }
+        plugin.abilityUse().tryCast(player, player.isSneaking() ? charge.id() : beam.id(), held, null);
     }
 
     /**
@@ -78,6 +117,7 @@ public final class StormListener implements Listener {
     /** Still online here, so the restored walk speed is what gets saved with the player. */
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        lastEntityClickTick.remove(event.getPlayer().getUniqueId());
         endBoth(event.getPlayer(), null);
     }
 

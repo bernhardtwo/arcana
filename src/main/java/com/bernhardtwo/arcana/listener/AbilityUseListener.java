@@ -91,7 +91,8 @@ public final class AbilityUseListener implements Listener {
         tryCast(player, wand.leftClickAbility(), held, clicked);
     }
 
-    private void tryCast(Player player, String abilityId, ItemStack held, Block clicked) {
+    /** The full cast path: permission, lockout, cooldown, mana, then the ability. Public for the storm listener, which reaches it from an entity interaction. */
+    public void tryCast(Player player, String abilityId, ItemStack held, Block clicked) {
         // An empty wand slot does nothing at all. The message below is only for a slot naming a missing ability.
         if (abilityId == null) {
             return;

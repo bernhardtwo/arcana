@@ -835,7 +835,16 @@ cancels the attack.
   health the same way, capped by `max-damage-per-second` when that is not
   0. With nothing in the line of fire it charges nothing at all, and after
   `lose-target-grace-seconds` of that it ends with `Storm: Beam lost its
-  target.`; out of mana ends it with `Storm: Beam: out of mana.` Players are
+  target.`; out of mana ends it with `Storm: Beam: out of mana.` A right
+  click on an entity with an interaction of its own, a villager, a horse,
+  an item frame, is that interaction on the client and never sends the use
+  packet, so with the hammer in the main hand the interaction is cancelled
+  and the click goes to the dispatcher like any other: the beam, or the
+  charge when sneaking. With the hammer wielded there is no trading and no
+  mounting; change slot for that. Measured at two blocks: a villager and a
+  tame horse get the beam, no trade window opens and nobody mounts, and an
+  item frame keeps its rotation and gets a beam with no target, since a
+  frame is not a living entity. Players are
   targets only with `affect-players` on, and both the beam and the bolt
   apply the usual claim rule: a target standing where the caster cannot
   build is refused with a message, so the beam on such a player is a beam
@@ -1038,11 +1047,6 @@ active, next to the GriefPrevention line.
   target: nine hits in thirteen seconds, one per bounce, each a mace
   smash from about four blocks. Smash's cooldown only limits the bolt, not
   the bounce.
-- The beam starts from the use packet, which the vanilla client sends for a
-  right click on air or a block. A right click on an entity with an
-  interaction of its own within reach, a villager or a horse, is that
-  interaction instead, so at close range the beam does not start on those;
-  on a zombie or a player it does.
 - A rooted caster still steers in the air: `walkSpeed` only governs ground
   movement.
 - `setVelocity` on players is the same mechanism anticheats flag as suspicious.
