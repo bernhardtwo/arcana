@@ -836,15 +836,12 @@ cancels the attack.
   0. With nothing in the line of fire it charges nothing at all, and after
   `lose-target-grace-seconds` of that it ends with `Storm: Beam lost its
   target.`; out of mana ends it with `Storm: Beam: out of mana.` A right
-  click on an entity with an interaction of its own, a villager, a horse,
-  an item frame, is that interaction on the client and never sends the use
-  packet, so with the hammer in the main hand the interaction is cancelled
-  and the click goes to the dispatcher like any other: the beam, or the
-  charge when sneaking. With the hammer wielded there is no trading and no
-  mounting; change slot for that. Measured at two blocks: a villager and a
-  tame horse get the beam, no trade window opens and nobody mounts, and an
-  item frame keeps its rotation and gets a beam with no target, since a
-  frame is not a living entity. Players are
+  click on a villager, a horse or an item frame within reach is dispatched
+  like any other, see the limitations: the beam, or the charge when
+  sneaking, and no trading or mounting with the hammer wielded. Measured at
+  two blocks: a villager and a tame horse get the beam, no trade window
+  opens and nobody mounts, and an item frame keeps its rotation and gets a
+  beam with no target, since a frame is not a living entity. Players are
   targets only with `affect-players` on, and both the beam and the bolt
   apply the usual claim rule: a target standing where the caster cannot
   build is refused with a message, so the beam on such a player is a beam
@@ -1015,7 +1012,12 @@ active, next to the GriefPrevention line.
   is tracked by the plugin per player and per ability; the visual one is only
   that.
 - With the staff in hand, both mouse buttons are cancelled. You will not open
-  a chest or break a block while wielding it. Hitting a mob still lands the
+  a chest or break a block while wielding it, nor trade, mount or turn an
+  item frame, nor dress an armor stand: a right click on an entity with an
+  interaction of its own never sends the use packet, so the dispatcher
+  takes the interaction instead, both the interact-at and the interact
+  events, cancels it and casts by slot as with a block, sneaking picking
+  the second slot. Change slot to trade. Hitting a mob still lands the
   staff's melee hit before the left click ability fires.
 - Leap decides whether you are airborne from the on-ground flag the client
   reports, the same one vanilla uses for fall distance.

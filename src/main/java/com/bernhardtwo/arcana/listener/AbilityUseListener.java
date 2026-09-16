@@ -14,6 +14,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -29,6 +31,8 @@ public final class AbilityUseListener implements Listener {
     private final ArcanaPlugin plugin;
     // Swinging at an entity fires both PlayerInteractEvent and an attack in the same tick.
     private final Map<UUID, Integer> lastLeftClickTick = new HashMap<>();
+    // A right click on an entity arrives as PlayerInteractAtEntityEvent, PlayerInteractEntityEvent and, when nothing consumed it, the use packet, all in the same tick.
+    private final Map<UUID, Integer> lastRightClickTick = new HashMap<>();
     // Abilities that deal damage through the API fire EntityDamageByEntityEvent with the caster as damager.
     private boolean casting;
 
@@ -60,8 +64,40 @@ public final class AbilityUseListener implements Listener {
             castLeftClick(player, wand.get(), held, action == Action.LEFT_CLICK_BLOCK ? event.getClickedBlock() : null);
             return;
         }
-        String abilityId = player.isSneaking() ? wand.get().sneakRightClickAbility() : wand.get().rightClickAbility();
-        tryCast(player, abilityId, held, null);
+        castRightClick(player, wand.get(), held);
+    }
+
+    /**
+     * A right click on an entity with an interaction of its own, a villager,
+     * a horse, an item frame, an armor stand, is that interaction on the
+     * client and never sends the use packet, so {@link #onInteract} never
+     * sees it. With a wand in the main hand the interaction is cancelled,
+     * like both buttons on a chest or a door, and the click is dispatched by
+     * slot like any other. The client sends an interact-at packet and then an
+     * interact packet, each with its own event and handler list, so both are
+     * taken here: an armor stand only ever sends the first. The events fire
+     * for both hands, hence the hand check, and land in the same tick as the
+     * use packet that follows when nothing consumed them, hence the dedupe.
+     * Cancelled events count too, like the staffs.
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
+    public void onInteractAtEntity(PlayerInteractAtEntityEvent event) {
+        onInteractEntity(event);
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
+    public void onInteractEntity(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        Player player = event.getPlayer();
+        ItemStack held = player.getInventory().getItemInMainHand();
+        Optional<Wand> wand = AbilityItems.wandOf(plugin, held);
+        if (wand.isEmpty()) {
+            return;
+        }
+        event.setCancelled(true);
+        castRightClick(player, wand.get(), held);
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
@@ -80,6 +116,7 @@ public final class AbilityUseListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         lastLeftClickTick.remove(event.getPlayer().getUniqueId());
+        lastRightClickTick.remove(event.getPlayer().getUniqueId());
     }
 
     private void castLeftClick(Player player, Wand wand, ItemStack held, Block clicked) {
@@ -91,8 +128,17 @@ public final class AbilityUseListener implements Listener {
         tryCast(player, wand.leftClickAbility(), held, clicked);
     }
 
-    /** The full cast path: permission, lockout, cooldown, mana, then the ability. Public for the storm listener, which reaches it from an entity interaction. */
-    public void tryCast(Player player, String abilityId, ItemStack held, Block clicked) {
+    /** Once per tick: an entity click and the use packet that may follow it are one click. Sneaking picks the second slot, as with blocks. */
+    private void castRightClick(Player player, Wand wand, ItemStack held) {
+        int tick = Bukkit.getCurrentTick();
+        Integer previous = lastRightClickTick.put(player.getUniqueId(), tick);
+        if (previous != null && previous == tick) {
+            return;
+        }
+        tryCast(player, player.isSneaking() ? wand.sneakRightClickAbility() : wand.rightClickAbility(), held, null);
+    }
+
+    private void tryCast(Player player, String abilityId, ItemStack held, Block clicked) {
         // An empty wand slot does nothing at all. The message below is only for a slot naming a missing ability.
         if (abilityId == null) {
             return;

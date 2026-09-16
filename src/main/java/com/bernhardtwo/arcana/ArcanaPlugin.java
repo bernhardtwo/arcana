@@ -80,7 +80,6 @@ public final class ArcanaPlugin extends JavaPlugin {
     private StormChargeAbility stormCharge;
     private StormBeamAbility stormBeam;
     private StormSmashAbility stormSmash;
-    private AbilityUseListener abilityUse;
 
     @Override
     public void onEnable() {
@@ -147,8 +146,7 @@ public final class ArcanaPlugin extends JavaPlugin {
         wands.register(new Wand(StormHammer.ID, "Thor's Hammer", Material.MACE,
                 "storm_beam", "storm_charge", "storm_smash"));
 
-        abilityUse = new AbilityUseListener(this);
-        getServer().getPluginManager().registerEvents(abilityUse, this);
+        getServer().getPluginManager().registerEvents(new AbilityUseListener(this), this);
         getServer().getPluginManager().registerEvents(new ItemGuardListener(this), this);
         getServer().getPluginManager().registerEvents(new DroppedItemListener(this), this);
         getServer().getPluginManager().registerEvents(new ManaListener(this), this);
@@ -299,11 +297,6 @@ public final class ArcanaPlugin extends JavaPlugin {
 
     public GravityBoots gravityBoots() {
         return gravityBoots;
-    }
-
-    /** The click dispatcher, for listeners that see a cast the interact event never carries. */
-    public AbilityUseListener abilityUse() {
-        return abilityUse;
     }
 
     public StormChargeAbility stormCharge() {
