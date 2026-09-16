@@ -772,7 +772,7 @@ Thor's Hammer is the first weapon: a mace, unbreakable, with Wind Burst at
 `wind-burst-level` applied when it is created, registered as a wand so the
 click dispatcher, the lore, the mana bar and the give command cover it like a
 staff. It is also the first item with a percentage cost and a percentage
-damage. Because it is a real mace, the vanilla smash attack, its knockback
+damage, though not true damage: see below. Because it is a real mace, the vanilla smash attack, its knockback
 and the Wind Burst launch all work as usual; the plugin adds on top and never
 cancels the attack.
 
@@ -853,14 +853,19 @@ cancels the attack.
   pool of 22: 11.0 seconds and 53% of the target's maximum health, the same
   on a husk, a ravager and a warden, 21 charges where the pool pays 20 and
   regeneration one.
-- **True damage** is `LivingEntity#damage(amount, DamageSource)` with
+- **The damage** is `LivingEntity#damage(amount, DamageSource)` with
   `DamageType.MAGIC` for the beam and `DamageType.LIGHTNING_BOLT` for the
   bolt, the caster as both causing and direct entity. That is the vanilla
   pipeline: `EntityDamageByEntityEvent` fires with the caster as damager, so
   the PvP flag, claims, god modes, totems, absorption and kill credit all
-  apply as for a sword. Magic damage bypasses armor and shields, but
-  not Resistance, not Protection, and witches take 15% of it, as in vanilla.
-  Lightning damage is reduced by armor. What neither does is touch the
+  apply as for a sword. Neither is true damage. Magic damage ignores armor
+  points and shields, and that is all it ignores: the Protection
+  enchantment reduces it like any other damage, a full set of Protection
+  IV by 64% and the enchantment formula caps at 80%, Resistance takes its
+  20% per level, and witches take 15% of it, as in vanilla. The beam is a
+  PvE tool, and a fully enchanted player shrugs most of it off; that is
+  accepted, not a bug to chase. Lightning damage is reduced by armor and
+  by Protection the same way. What neither does is touch the
   target's invulnerability window: vanilla keeps every hit within ten ticks
   of the last only for the amount above it and refreshes the window on each
   hit, so a beam ticking twice a second would leave its target immune to
