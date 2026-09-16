@@ -63,13 +63,17 @@ public final class GravityBoots {
         return active.containsKey(player);
     }
 
-    /** For the mana bar title while flying, null otherwise. */
-    public String status(UUID player) {
-        Flight flight = active.get(player);
-        if (flight == null) {
-            return null;
+    /**
+     * For the mana bar title: the state while armed or flying, null when the
+     * boots are merely worn. The bar is the one feedback another plugin's
+     * action bar cannot overwrite, so the armed state lives there.
+     */
+    public String status(Player player) {
+        Flight flight = active.get(player.getUniqueId());
+        if (flight != null) {
+            return String.format("%s flying, step %d (%.0f/s)", NAME, flight.step, settings().manaPerSecond(flight.seconds));
         }
-        return String.format("%s step %d (%.0f/s)", NAME, flight.step, settings().manaPerSecond(flight.seconds));
+        return isArmed(player) ? NAME + " armed" : null;
     }
 
     // ----- armed -----
@@ -98,7 +102,9 @@ public final class GravityBoots {
         }
         plugin.store().grantFlight(player, new PlayerStore.FlightGrant(player.getAllowFlight(), player.getFlySpeed()));
         player.setAllowFlight(true);
-        player.sendActionBar(Component.text(NAME + " armed: double tap jump to fly", NamedTextColor.LIGHT_PURPLE));
+        // Chat, not the action bar: AuraSkills rewrites the action bar every few ticks and the message would vanish unread.
+        player.sendMessage(Component.text(NAME + " armed: double tap jump to fly", NamedTextColor.LIGHT_PURPLE));
+        plugin.manaBar().refresh(player);
         if (plugin.settings().effects()) {
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_ACTIVATE, 0.6f, 1.6f);
         }
@@ -119,7 +125,10 @@ public final class GravityBoots {
         player.setAllowFlight(previous.allowFlight());
         player.setFlySpeed(previous.flySpeed());
         if (message != null && player.isOnline()) {
-            player.sendActionBar(warn(message));
+            player.sendMessage(warn(message));
+        }
+        if (player.isOnline()) {
+            plugin.manaBar().refresh(player);
         }
         if (plugin.settings().effects() && player.isOnline()) {
             player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 0.6f, 1.6f);

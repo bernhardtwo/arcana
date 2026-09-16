@@ -644,8 +644,10 @@ creative flight is the switch. Three states:
   cancelled event too, like the staffs, because the click is only a signal
   and nothing in the world is touched. Vanilla spawn protection is
   different, the server drops the click before any event fires, so inside
-  it only ops can arm. Arming switches `allowFlight` on, says so and
-  chimes. What the player had before, `allowFlight` and
+  it only ops can arm. Arming switches `allowFlight` on, says so in chat
+  and chimes. Chat, not the action bar: AuraSkills rewrites the action bar
+  every few ticks with its own mana bar, so an action bar message is gone
+  before it can be read. What the player had before, `allowFlight` and
   `flySpeed`, is written to their data container the moment it is granted,
   and that grant **is** the armed state, so it survives a relog and a
   crash like a cooldown. The same sneak click disarms. Disarming puts the
@@ -693,9 +695,12 @@ creative flight is the switch. Three states:
   change, gamemode change and plugin disable, and if another plugin sets
   the player to not flying without an event, the next charge notices and
   ends it too.
-- **Feedback.** While flying, the mana bar is shown even with no staff in
-  hand, with the current step and cost per second in the title, and a
-  chime marks each step up. Without AuraSkills the flight is free, like
+- **Feedback.** From the moment the boots are armed, the mana bar is shown
+  even with no staff in hand, with `Levitation Boots armed` in the title,
+  and `flying, step N (cost/s)` while flying; it goes when they disarm. The
+  state is always visible instead of depending on a message. Every arm and
+  disarm, including the one caused by a hit, is a chat line, and a chime
+  marks each step up. Without AuraSkills the flight is free, like
   every other cost.
 - The boots are tagged like the potion, so the item guard and the dropped
   item protection cover them, and they are unbreakable: armor wears out on
@@ -760,9 +765,9 @@ roughly 40 to 60. The Chainshot costs 0 **on purpose**, it is a tool and not
 magic, but the keys exist so another server can charge for it.
 
 **Mana bar.** A boss bar shown while an Arcana wand is in either hand or the
-Levitation Boots are flying, hidden the moment neither is true, with the
-current and maximum mana in the title, plus the ladder step and cost per
-second while flying. One task refreshes it every 10 ticks for every online
+Levitation Boots are armed, hidden the moment neither is true, with the
+current and maximum mana in the title, plus the boots state: armed, or the
+ladder step and cost per second while flying. One task refreshes it every 10 ticks for every online
 player, and a hand change refreshes it on the spot. Never shown when the
 bridge is inactive; `mana.bar: false` turns it off for servers that already
 display mana elsewhere. It is removed on quit, world change and plugin

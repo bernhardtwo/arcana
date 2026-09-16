@@ -13,9 +13,9 @@ import java.util.UUID;
 
 /**
  * One boss bar per player, shown while a wand is in either hand or the
- * Levitation Boots are flying, and only with the mana bridge active. Refreshed
- * by one task every 10 ticks over the online players, and on the spot when the
- * held item or the flight changes.
+ * Levitation Boots are armed or flying, and only with the mana bridge active.
+ * Refreshed by one task every 10 ticks over the online players, and on the
+ * spot when the held item or the boots state changes.
  */
 public final class ManaBar {
 
@@ -34,7 +34,7 @@ public final class ManaBar {
 
     /** Shows, updates or hides the bar for this player right now. */
     public void refresh(Player player) {
-        String flight = plugin.gravityBoots().status(player.getUniqueId());
+        String flight = plugin.gravityBoots().status(player);
         boolean holding = flight != null
                 || AbilityItems.wandOf(plugin, player.getInventory().getItemInMainHand()).isPresent()
                 || AbilityItems.wandOf(plugin, player.getInventory().getItemInOffHand()).isPresent();
