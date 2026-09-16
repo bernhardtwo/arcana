@@ -1018,7 +1018,9 @@ active, next to the GriefPrevention line.
   takes the interaction instead, both the interact-at and the interact
   events, cancels it and casts by slot as with a block, sneaking picking
   the second slot. Change slot to trade. Hitting a mob still lands the
-  staff's melee hit before the left click ability fires.
+  staff's melee hit before the left click ability fires, and a hit that
+  another plugin cancelled, a player inside a claim, is no click at all:
+  nothing casts, nothing is charged.
 - Leap decides whether you are airborne from the on-ground flag the client
   reports, the same one vanilla uses for fall distance.
 - Rend removes a block outside of `BlockBreakEvent`, so other plugins that

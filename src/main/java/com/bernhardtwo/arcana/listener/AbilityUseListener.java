@@ -100,7 +100,8 @@ public final class AbilityUseListener implements Listener {
         castRightClick(player, wand.get(), held);
     }
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
+    /** A hit that went through. One another plugin cancelled, inside a claim, is no click: it casts nothing and costs nothing. */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onAttack(EntityDamageByEntityEvent event) {
         if (casting || !(event.getDamager() instanceof Player player)) {
             return;
